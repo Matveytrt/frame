@@ -28,7 +28,6 @@ END_PROG		 	macro
 					endm
 ;=========================================================================
 pos_0 equ 700
-st_offset equ 760
 color_0 = 4ch or 80h
 symbol_0 = 03h
 len_0 = 3
@@ -36,9 +35,10 @@ wdth_0 = 10
 hght_0 = 5
 ;=========================================================================
 Sign_t	struc
-		sign_pos		dw pos_0
-		sign_addr		dw 81h
+		sgn_pos 		dw pos_0
+		sgn_addr		dw 0
 		len				dw 0
+		nlines			dw 1
 		sgn_clr   		db color_0
 Sign_t 	ends
 ;=========================================================================
@@ -46,20 +46,21 @@ Frame_t	struc
 		frame_pos		dw pos_0
 		wdth			dw wdth_0
 		hght			dw hght_0
-		sym		  		db symbol_0
+		sym		  		db symbol_0 ;style data
 		frm_clr   		db color_0
 Frame_t ends	
 ;=========================================================================
 
 Start:
 Frame Frame_t <, , , ,>
+Sign Sign_t <, , , ,>
 ;================================Main=====================================
 Main			proc
 				
 				mov si, 80h
 				mov cl, [si] ;cmd_strlen
 
-				test cl, cl ;no sign == default
+				test cl, cl ;no params
 				jz @@skip_par
 				
 				dec cl
@@ -71,12 +72,35 @@ Main			proc
 				call Get_Frm_Pos ;bx = pos
 				mov word ptr [Frame.frame_pos], bx
 
-				call Get_Wdth
+				call Get_Wdth ;dx = wdth
 				mov word ptr [Frame.wdth], dx
 
-				call Get_Hght
+				call Get_Hght ;dx = hght
 				mov word ptr [Frame.hght], dx
-			
+
+				call Get_Frm_Style ;dx
+				mov byte ptr [Frame.frm_clr], dh
+				mov byte ptr [Frame.sym], dl
+
+				call Skip_Spaces
+
+				mov ax, ds
+				mov es, ax
+				mov di, si
+				call Strlen
+				mov word ptr [Sign.len], ax
+
+				test ax, ax
+				jz @@skip_par ;no sign
+				mov word ptr [Sign.sgn_addr], si
+
+				mov dx, [Frame.wdth]
+				mov di, [Frame.hght]
+				mov cx, [Sign.len]
+				call Get_Sign_Pos ;bx
+				lea bx, [bx + [Frame.frame_pos]]
+				mov word ptr [Sign.sgn_pos], bx
+							
 @@skip_par:		mov ax, 0b800h
 				mov es, ax ;vmem segment
 				mov dh, [Frame.frm_clr]
@@ -125,9 +149,7 @@ Scan_Str     	proc
 
 ;================================StrLen===================================
 Strlen			proc
-				push cx
-
-				mov al, '%'
+				mov ax, '%'
 
 				cld
 				xor cx, cx
@@ -137,16 +159,14 @@ Strlen			proc
 				xchg ax, cx
 				not ax
 
-				pop cx
 				ret
 				endp
 ;================================StrLen===================================
 ;Entry: 	ES:DI - read_adr 
 ;Exit:		AX - len
-;			CL = '%'
-;Expected:
-;Destroyed: CX, AX
-;Comment: return len of str to %
+;Expected: % is the end of str, or err
+;Destroyed: CX, ES:DI
+;Comment: return len of str
 ;ToDo:
 ;=========================================================================
 
@@ -162,6 +182,8 @@ Get_Frm_Pos		proc
 				call Atoi ;BX = X
 				shl bx, 1
 				push bx ;save x
+
+				call Skip_Spaces
 
 				lodsb
 				cmp al, 'y'
@@ -195,17 +217,51 @@ Get_Frm_Pos		proc
 
 ;================================Get_Sign_Pos=============================
 Get_Sign_Pos	proc
-				
-				lea ax, [bx + 162]
+				push bp
+				mov bp, sp
 
+				xor ax, ax
+				xor bx, bx
+
+				sub dx, 2
+				cmp cx, dx
+				ja @@exit
+				add dx, 2
+
+				mov ax, di
+				mov bl, 2
+				div bl
+
+				xor ah, ah
+				inc al
+				mov di, ax ;save half h
+
+				mov ax, dx
+				sub ax, cx
+				div bl
+
+				xor ah, ah
+				mov bx, ax ;save hor offset
+				shl bx, 1 ;x2
+
+				mov dx, di
+				shl dx, 7 ;128 di
+				shl di, 5 ;32 di
+				add di, dx ;160*di
+
+				lea bx, [bx + di]	
+
+@@exit:			pop bp
 				ret
 				endp
 ;================================Get_Sign_Pos=============================
-;Entry: 	BX - frame pos
-;Exit:		AX - sign pos
+;Entry: 	CX - sign len, 
+;			DX - frame wdth
+;			DI - frame hght
+;Exit:		BX - rltv sign pos
 ;Expected: -
-;Destroyed: AX
-;Comment: ret sign pos
+;Destroyed: CX, DX, DI, AX, BX
+;Comment: ret relative sign pos or 0, when can't centring the sign
 ;ToDo:
 ;=========================================================================
 
@@ -229,11 +285,10 @@ Get_Wdth		proc
 @@exit:			ret
 				endp
 ;================================Get_Wdth=================================
-;Entry: 	CX - len
-;			DS:SI - read addr 
+;Entry: 	DS:SI - read addr 
 ;Exit:		DX - wdth
-;Expected: DS = def
-;Destroyed: AX, DX, BX
+;Expected: 	DS = def
+;Destroyed: AX, BX
 ;Comment: ret frame wdth
 ;ToDo:
 ;=========================================================================
@@ -259,7 +314,6 @@ Get_Hght		proc
 				endp
 ;================================Get_Hght=================================
 ;Entry: 	DS:SI - read addr
-;			CX - len
 ;Exit:		DX - hght
 ;Expected: 	DS = def
 ;Destroyed: AX, BX, DX
@@ -268,28 +322,75 @@ Get_Hght		proc
 ;=========================================================================
 
 ;===============================Get_Frm_Style=============================
-Get_Frm_Style		proc
+Get_Frm_Style	proc
+				push bp
+    			mov bp, sp
+
 				call Skip_Spaces
 
-				; @@jump_table:
-				; 	dw @@case_0
-				; 	dw @@case_1
-				; 	dw @@case_2
-				; 	dw @@case_3
+				xor ax, ax
 
-				; @@case_0:
-					
+				lodsb
+				cmp al, 's'
+				jne @@default
 
+				lodsb ;err_check
+
+				cmp al, '0'
+				jb @@default
+				cmp al, '3'
+				ja @@default
+
+				and al, 0fh
+				shl al, 1 ;word_addresses
+				mov bx, ax
+
+				lea bx, [bx + @@jump_table]
+
+
+				jmp [bx]
+
+				@@jump_table:
+					dw @@case_0
+					dw @@case_1
+					dw @@case_2
+					dw @@case_3
+
+				@@case_0:
+					mov dl, 0b0h
+					mov dh, 83h
+					jmp @@exit
+
+				@@case_1:
+					mov dl, 03h
+					mov dh, 95h
+					jmp @@exit
+
+				@@case_2:
+					mov dl, 0fh
+					mov dh, 0ach
+					jmp @@exit
+
+				@@case_3:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@exit
+
+				@@default:
+					dec si
+					mov dl, symbol_0
+					mov dh, color_0
+					jmp @@exit
+
+@@exit:			pop bp
 				ret
 				endp
 ;===============================Get_Frm_Style============================
 ;Entry: 	DS:SI - read addr
-;			AL - cur_pos
-;			CX - len_str
-;Exit:		DX - 
-;			
+;Exit:		DX - frm atribute
+;			DH - color, DL - sym	
 ;Expected: 	DS = default
-;Destroyed:
+;Destroyed: AX, BX
 ;Comment: define visualisatin of frame
 ;ToDo: 
 ;=========================================================================
@@ -297,19 +398,17 @@ Get_Frm_Style		proc
 ;===============================Skip_Spaces===============================
 Skip_Spaces		proc
 
-@@lp:			lodsb
+@@next_sp:		lodsb
 				cmp al, ' '
 				jne @@exit
-				loop @@lp
+				jmp @@next_sp
 
 @@exit:			dec si
 				ret
 				endp
 ;===============================Skip_Spaces===============================
 ;Entry: 	DS:SI - read addr 
-;			CX - len
 ;Exit:		SI += Nspaces 
-;			CX -= Nspaces
 ;Expected: 	DS = default
 ;Destroyed: AL
 ;Comment: skips all spaces from cur_pos
@@ -417,7 +516,7 @@ Atoi			proc
 
 				add bx, ax
 				
-				loop @@next_digit
+				jmp @@next_digit
 
 @@exit:			dec si
 				pop bp
@@ -425,7 +524,6 @@ Atoi			proc
 				endp
 ;===============================Atoi======================================
 ;Entry: 	DS:SI - read addr 
-;			CX - len
 ;Exit:		BX - num, AL = -1
 ;Expected: 	DS = default
 ;Destroyed: DX
