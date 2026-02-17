@@ -98,7 +98,8 @@ Main			proc
 				mov di, [Frame.hght]
 				mov cx, [Sign.len]
 				call Get_Sign_Pos ;bx
-				lea bx, [bx + [Frame.frame_pos]]
+				mov di, [Frame.frame_pos]
+				lea bx, [bx + di]
 				mov word ptr [Sign.sgn_pos], bx
 							
 @@skip_par:		mov ax, 0b800h
@@ -107,49 +108,52 @@ Main			proc
 				mov dl, [Frame.sym]
 
 				CALL_CDECL Draw_Frame, [Frame.frame_pos], [Frame.wdth], [Frame.hght], dx
+
+				mov cx, [Sign.len]
+				test cx, cx
+				jz @@no_sign
+				mov si, [Sign.sgn_addr]
+				mov di, [Sign.sgn_pos]
+				mov dh, [Sign.sgn_clr]
+				call Print_Str
 				
-				END_PROG
+@@no_sign:		END_PROG
 				endp
 ;=========================================================================
 
-;================================Scan_Str=================================
-Scan_Str     	proc
+;================================Print_Str================================
+Print_Str     	proc
 				push bp
 
 				call Skip_Spaces
-
 				mov ah, dh
-				jmp @@first_check
 
 @@lp:			lodsb 
-
-@@first_check:	cmp byte ptr al, '%'
+				cmp byte ptr al, '%'
 				je @@exit
-
 				stosw
 				loop @@lp 
 
 @@exit:			pop bp
 				ret
 				endp
-;================================Scan_Str=================================
+;================================Print_Str================================
 ;Entry: 	DS:SI - read addr
 ;			ES:DI - write addr
-;			CX - st_len (count)
+;			CX - len
 ;			DH = color
-;Exit:		AL - cur_sym
-;Expected: 	SI = 82h
+;Exit:		-
+;Expected: 	DS = def
 ;			ES = 0b800h
-;			DS = default 
-;Destroyed: DL, AX
-;Comment: % is needed when need pos/ сначала считать в оперативку
-;		потом считать в видеопамять
+;Destroyed: AX
+;Comment: % is needed when need pos
 ;ToDo:
 ;=========================================================================
 
 ;================================StrLen===================================
 Strlen			proc
-				mov ax, '%'
+				xor ah, ah
+				mov al, '%'
 
 				cld
 				xor cx, cx
@@ -158,6 +162,7 @@ Strlen			proc
 
 				xchg ax, cx
 				not ax
+				dec ax
 
 				ret
 				endp
