@@ -92,9 +92,9 @@ Main			proc
 				call Get_Hght ;dx = hght
 				mov word ptr [Frame.hght], dx
 
-				call Get_Frm_Style ;dx
-				mov byte ptr [Frame.frm_clr], dh
-				mov byte ptr [Frame.sym], dl
+				mov bx, offset Style_Data
+				mov cx, 9
+				call Get_Style
 
 				call Skip_Spaces
 
@@ -564,7 +564,6 @@ Get_Style		proc
 ;Entry: 	DS:SI - read addr
 ;			BX - data addr
 ;			CX - data len
-;			DI - offset
 ;Exit:      - 
 ;Expected: 	DS = default
 ;Destroyed: BX, CX, DX, DI, AX
