@@ -4,6 +4,12 @@
 LOCALS @@
 org 100h
 ;=========================================================================
+DEF_SYM				macro name, clr, idx
+					mov dl, name
+					mov dh, clr
+					mov di, idx
+					endm
+;=========================================================================
 PUSH_ARG			macro arg
 					mov ax, arg
 					push ax
@@ -30,7 +36,6 @@ END_PROG		 	macro
 pos_0 equ 700
 color_0 = 4ch or 80h
 symbol_0 = 03h
-len_0 = 3
 wdth_0 = 10
 hght_0 = 5
 ;=========================================================================
@@ -48,12 +53,18 @@ Frame_t	struc
 		hght			dw hght_0
 		sym		  		db symbol_0 ;style data
 		frm_clr   		db color_0
-Frame_t ends	
+Frame_t ends
 ;=========================================================================
-
-Start:
+DATASEG
 Frame Frame_t <, , , ,>
 Sign Sign_t <, , , ,>
+Style_Data dw 9 dup(0)
+; 0  1  2
+; 3  4  5
+; 6  7  8  - 9 pos symbols def frame style
+;=========================================================================
+CODESEG
+Start:
 ;================================Main=====================================
 Main			proc
 				
@@ -153,12 +164,13 @@ Print_Str     	proc
 ;================================StrLen===================================
 Strlen			proc
 				xor ah, ah
-				mov al, '%'
+				mov al, 0dh
 
 				cld
 				xor cx, cx
 				dec cx
 				repne scasb
+				dec di
 
 				xchg ax, cx
 				not ax
@@ -171,7 +183,36 @@ Strlen			proc
 ;Exit:		AX - len
 ;Expected: % is the end of str, or err
 ;Destroyed: CX, ES:DI
-;Comment: return len of str
+;Comment: return len of str from cur pos to 0dh
+;ToDo:
+;=========================================================================
+
+;================================StrChr===================================
+Strchr			proc
+				mov dl, cl
+
+				call Strlen ;ax - len
+				mov cx, ax ;max len
+				mov al, dl ;trgt sym
+
+				cld
+				repne scasb
+				dec di
+				cmp byte ptr al, es:[di]
+				je @@exit ;search is ok
+
+				xor di, di
+
+@@exit:			ret
+				endp
+;================================StrChr===================================
+;Entry: 	ES:DI - read_adr 
+;			CL - target symbol != 0
+;Exit:		ES:DI - found pos
+;Expected:
+;Destroyed: AX, CX, DX
+;Comment: ret DI - pos of found sym 
+;ret 0 (in DI) when end of cmd string (0dh) reached FAIL
 ;ToDo:
 ;=========================================================================
 
@@ -247,7 +288,7 @@ Get_Sign_Pos	proc
 
 				xor ah, ah
 				mov bx, ax ;save hor offset
-				shl bx, 1 ;x2
+				shl bx, 1 ;2x wdth
 
 				mov dx, di
 				shl dx, 7 ;128 di
@@ -272,6 +313,8 @@ Get_Sign_Pos	proc
 
 ;================================Get_Wdth=================================
 Get_Wdth		proc
+				push bp
+				mov bp, sp
 
 				call Skip_Spaces
 
@@ -287,7 +330,8 @@ Get_Wdth		proc
 @@default:		dec si
 				mov dx, wdth_0
 
-@@exit:			ret
+@@exit:			pop bp
+				ret
 				endp
 ;================================Get_Wdth=================================
 ;Entry: 	DS:SI - read addr 
@@ -300,6 +344,8 @@ Get_Wdth		proc
 
 ;================================Get_Hght=================================
 Get_Hght		proc
+				push bp
+				mov bp, sp
 
 				call Skip_Spaces
 
@@ -315,7 +361,8 @@ Get_Hght		proc
 @@default:		dec si
 				mov dx, hght_0
 
-@@exit:			ret
+@@exit:			pop bp
+				ret
 				endp
 ;================================Get_Hght=================================
 ;Entry: 	DS:SI - read addr
@@ -339,6 +386,7 @@ Get_Frm_Style	proc
 				cmp al, 's'
 				jne @@default
 
+				call Skip_Spaces
 				lodsb ;err_check
 
 				cmp al, '0'
@@ -400,6 +448,135 @@ Get_Frm_Style	proc
 ;ToDo: 
 ;=========================================================================
 
+;===============================Get_Style=================================
+Get_Style		proc
+				push bp
+    			mov bp, sp
+
+				call Skip_Spaces
+
+				xor ax, ax
+				mov di, bx
+
+				lodsb
+				cmp al, '['
+				jne @@no_style
+
+@@lp:			call Skip_Spaces
+				lodsb
+
+				cmp al, '0'
+				jb @@default
+				cmp al, '9'
+				ja @@default
+
+				and al, 0fh ;get num
+				
+				shl al, 1 ;word_addresses
+				mov bx, ax
+
+				lea bx, [bx + @@jump_table]
+				jmp [bx] ;dx - symbol
+
+@@next:			mov [di], dx
+				lea di, [di + 2]
+				loop @@lp
+
+				call Skip_Spaces
+				lodsb
+				cmp al, ']'
+				je @@exit
+
+				dec si
+				jmp @@exit
+
+				@@jump_table:
+					dw @@case_0
+					dw @@case_1
+					dw @@case_2
+					dw @@case_3
+					dw @@case_4
+					dw @@case_5
+					dw @@case_6
+					dw @@case_7
+					dw @@case_8
+					dw @@case_9
+
+				@@case_0:
+					mov dl, 0b0h
+					mov dh, 83h
+					jmp @@next
+
+				@@case_1:
+					mov dl, 03h
+					mov dh, 95h
+					jmp @@next
+
+				@@case_2:
+					mov dl, 0fh
+					mov dh, 0ach
+					jmp @@next
+
+				@@case_3:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_4:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_5:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_6:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_7:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_8:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@case_9:
+					mov dl, 06h
+					mov dh, 0ceh
+					jmp @@next
+
+				@@default:
+					cmp al, ']'
+					jne @@no_style
+					dec si
+					mov dl, symbol_0
+					mov dh, color_0
+					jmp @@next ; jmp next
+
+@@no_style:		dec si
+@@exit:			pop bp
+				ret
+				endp
+;===============================Get_Style=================================
+;Entry: 	DS:SI - read addr
+;			BX - data addr
+;			CX - data len
+;			DI - offset
+;Exit:      - 
+;Expected: 	DS = default
+;Destroyed: BX, CX, DX, DI, AX
+;Comment: [123456789] - style format
+;ToDo: 
+;=========================================================================
+
+
 ;===============================Skip_Spaces===============================
 Skip_Spaces		proc
 
@@ -455,13 +632,15 @@ Draw_Frame		proc
 				endp
 ;================================Draw_Frame===============================
 ;Entry: 	BX = [bp + 4] - vmem offset
-;			CX = [bp + (8 | 6)] hght or wdth
+;			CX = [bp + (8 | 6)] hght or wdth (уменьшаем на 2)
 ;			DX = [bp + 10] - symbol
 ;Exit:		BX to start pos
 ;Expected: 	ES = 0b800h
 ;Destroyed: BX, CX, DX
 ;Comment: frame drawing / CDECL std
-;ToDo: сверху вниз 9 / чисельный формат рисования
+;ToDo: слева направо + заливка
+;используя структуру стиля 
+;левый верхний строка (wdth - 2)
 ;=========================================================================
 
 ;================================Print_Row================================
@@ -487,7 +666,7 @@ Print_Row 		proc
 ;			ES:BX - addr / ES = vmem_segment_addr
 ;			CX = [BP + 8] - count
 ;			SI = [BP + 6] - step	
-;			DX = [BP + 4] - color
+;			DX = [BP + 4] - symbol
 ;Exit:		BX = [BP + 10] - new_offset
 ;Expected:  -
 ;Destroyed: CX, DX, SI
