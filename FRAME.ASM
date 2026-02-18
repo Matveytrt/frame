@@ -4,10 +4,13 @@
 LOCALS @@
 org 100h
 ;=========================================================================
-DEF_SYM				macro name, clr, idx
+DEF_SYM				macro name, clr
 					mov dl, name
 					mov dh, clr
-					mov di, idx
+					endm
+;=========================================================================
+GET_SYM				macro pos
+					mov dx, [di + pos]
 					endm
 ;=========================================================================
 PUSH_ARG			macro arg
@@ -58,7 +61,7 @@ Frame_t ends
 DATASEG
 Frame Frame_t <, , , ,>
 Sign Sign_t <, , , ,>
-Style_Data dw 9 dup(0)
+Style_Data dw 9 dup(4c03h)  
 ; 0  1  2
 ; 3  4  5
 ; 6  7  8  - 9 pos symbols def frame style
@@ -115,8 +118,9 @@ Main			proc
 							
 @@skip_par:		mov ax, 0b800h
 				mov es, ax ;vmem segment
-				mov dh, [Frame.frm_clr]
-				mov dl, [Frame.sym]
+				; mov dh, [Frame.frm_clr]
+				; mov dl, [Frame.sym]
+				mov dx, offset Style_Data
 
 				CALL_CDECL Draw_Frame, [Frame.frame_pos], [Frame.wdth], [Frame.hght], dx
 
@@ -279,7 +283,6 @@ Get_Sign_Pos	proc
 				div bl
 
 				xor ah, ah
-				inc al
 				mov di, ax ;save half h
 
 				mov ax, dx
@@ -457,10 +460,15 @@ Get_Style		proc
 
 				xor ax, ax
 				mov di, bx
+				mov dl, symbol_0
+				mov dh, color_0
 
 				lodsb
 				cmp al, '['
-				jne @@no_style
+				jne @@far_jmp
+				jmp @@lp
+
+@@far_jmp:		jmp far ptr @@no_style
 
 @@lp:			call Skip_Spaces
 				lodsb
@@ -503,61 +511,49 @@ Get_Style		proc
 					dw @@case_9
 
 				@@case_0:
-					mov dl, 0b0h
-					mov dh, 83h
+					DEF_SYM 0b0h, 83h
 					jmp @@next
 
 				@@case_1:
-					mov dl, 03h
-					mov dh, 95h
+					DEF_SYM 03h, 95h
 					jmp @@next
 
 				@@case_2:
-					mov dl, 0fh
-					mov dh, 0ach
+					DEF_SYM 0fh, 0ach
 					jmp @@next
 
 				@@case_3:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh
 					jmp @@next
 
 				@@case_4:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
 				@@case_5:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
 				@@case_6:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
-				@@case_7:
-					mov dl, 06h
-					mov dh, 0ceh
+				@@case_7:										
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
 				@@case_8:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
 				@@case_9:
-					mov dl, 06h
-					mov dh, 0ceh
+					DEF_SYM 06h, 0ceh;c
 					jmp @@next
 
 				@@default:
 					cmp al, ']'
 					jne @@no_style
 					dec si
-					mov dl, symbol_0
-					mov dh, color_0
 					jmp @@next ; jmp next
 
 @@no_style:		dec si
@@ -573,6 +569,7 @@ Get_Style		proc
 ;Expected: 	DS = default
 ;Destroyed: BX, CX, DX, DI, AX
 ;Comment: [123456789] - style format
+; not the best realisation, but that's special for show switch table and far jmps
 ;ToDo: 
 ;=========================================================================
 
@@ -603,41 +600,78 @@ Draw_Frame		proc
 				mov bp, sp
 
 				mov bx, [bp + 4]
-				mov cx, [bp + 6]
-				mov dx, [bp + 10]
 
+				sub word ptr [bp + 8], 2
+
+				sub word ptr [bp + 6], 2
+
+				mov di, [bp + 10]
+
+				GET_SYM 0 ;left up
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;dot
+				
+				GET_SYM 2 ;up mid
+				mov cx, [bp + 6]
 				GET_ARGS bx, cx, 2, dx
-				call Print_Row ;upper line
+				call Print_Row ;hor up
 
-				lea bx, [bx + 158]
-				mov cx, [bp + 8]
+				GET_SYM 4 ;right up
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;dot
+				
+				mov bx, [bp + 4]
+				lea bx, [bx + 160]
+				mov cx, [bp + 8];lp count
 
-				GET_ARGS bx, cx, 160, dx
-				call Print_Row ;left vert
+@@lp:			push bx
+				push cx
+				GET_SYM 6 ;left vert
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;dot
 
+				GET_SYM 8
 				mov cx, [bp + 6]
+				GET_ARGS bx, cx, 2, dx
+				call Print_Row ;middle
 
-				GET_ARGS bx, cx, -2, dx
-				call Print_Row ;lower line
+				GET_SYM 10
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;right vert
 
-				lea bx, [bx - 158]
+				pop cx
+				pop bx
+				lea bx, [bx + 160];next line
+				loop @@lp
 
-				mov cx, [bp + 8]
+				GET_SYM 12 ;left dwn
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;dot
+				
+				GET_SYM 14 ;dwn mid
+				mov cx, [bp + 6]
+				GET_ARGS bx, cx, 2, dx
+				call Print_Row ;hor dwn
 
-				GET_ARGS bx, cx, -160, dx
-				call Print_Row
+				GET_SYM 16 ;right dwn
+				GET_ARGS bx, 1, 2, dx
+				call Print_Row ;dot
 
 				pop bp
 				ret
 				endp
 ;================================Draw_Frame===============================
-;Entry: 	BX = [bp + 4] - vmem offset
-;			CX = [bp + (8 | 6)] hght or wdth (уменьшаем на 2)
-;			DX = [bp + 10] - symbol
-;Exit:		BX to start pos
-;Expected: 	ES = 0b800h
-;Destroyed: BX, CX, DX
-;Comment: frame drawing / CDECL std
+;Entry: 	[BP+4]  - vmem offset (начальный адрес в видеопамяти)
+;           [BP+6]  - width (ширина рамки в символах)
+;           [BP+8]  - height (высота рамки в символах)
+;			[BP+10] - style data addr (адрес структуры со стилями)
+;Exit:		-
+;Expected: 	ES = 0b800h (сегмент видеопамяти)
+;Destroyed: AX, BX, CX, DX, SI
+;Comment: Рисует рамку используя структуру стиля (18 слов)
+;         Стили: 0-left_up, 2-up_mid, 4-right_up,
+;                6-left_vert, 8-mid_vert, 10-right_vert,
+;                12-left_down, 14-down_mid, 16-right_down
 ;ToDo: слева направо + заливка
 ;используя структуру стиля 
 ;левый верхний строка (wdth - 2)
@@ -662,15 +696,14 @@ Print_Row 		proc
 				ret 8
 				endp
 ;================================Print_Row================================
-;Entry: 	BX = [BP + 10] - offset
-;			ES:BX - addr / ES = vmem_segment_addr
-;			CX = [BP + 8] - count
-;			SI = [BP + 6] - step	
-;			DX = [BP + 4] - symbol
-;Exit:		BX = [BP + 10] - new_offset
-;Expected:  -
-;Destroyed: CX, DX, SI
-;Comment: Printing line / Pascal std
+;Entry: 	Стек: [BP+10] - vmem offset
+;                 [BP+8]  - length (количество символов)
+;                 [BP+6]  - step (шаг между символами в байтах)
+;                 [BP+4]  - symbol (символ+атрибут)
+;Exit:			  [BP+10] обновлен (новый offset после печати)
+;Expected: 	ES = 0b800h
+;Destroyed: CX, DX, SI (BX не портится!)
+;Comment: Печатает строку символов с заданным шагом
 ;ToDo: .
 ;=========================================================================
 

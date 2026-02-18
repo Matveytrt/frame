@@ -1,4 +1,4 @@
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 1
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 1
 frame.asm
 
 
@@ -9,849 +9,995 @@ frame.asm
       4				     LOCALS @@
       5				     org 100h
       6				     ;=========================================================================
-      7				     DEF_SYM			     macro name, clr, idx
+      7				     DEF_SYM			     macro name, clr
       8									     mov dl, name
       9									     mov dh, clr
-     10									     mov di, idx
-     11									     endm
-     12				     ;=========================================================================
-     13				     PUSH_ARG			     macro arg
-     14									     mov ax, arg
-     15									     push ax
-     16									     endm
-     17				     ;=========================================================================
-     18				     GET_ARGS			     macro A, B, C, D
-     19									     PUSH_ARG A
-     20									     PUSH_ARG B
-     21									     PUSH_ARG C
-     22									     PUSH_ARG D
-     23									     endm
-     24				     ;=========================================================================
-     25				     CALL_CDECL			     macro proc_name, A, B, C, D
-     26									     GET_ARGS D, C, B, A
-     27									     call proc_name
-     28									     add  sp, 8
-     29								     endm
-     30				     ;=========================================================================
-     31				     END_PROG			     macro
-     32									     mov ax, 4c00h
-     33									     int 21h
-     34									     endm
-     35				     ;=========================================================================
-     36	      =02BC		     pos_0 equ 700
-     37	      =00CC		     color_0 = 4ch or 80h
-     38	      =0003		     symbol_0 =	03h
-     39	      =000A		     wdth_0 = 10
-     40	      =0005		     hght_0 = 5
-     41				     ;=========================================================================
-     42	*100			     Sign_t  struc
-     43	*000  01*(02BC)				     sgn_pos		     dw	pos_0
-     44	*002  01*(0000)				     sgn_addr		     dw	0
-     45	*004  01*(0000)				     len			     dw	0
-     46	*006  01*(0001)				     nlines		     dw	1
-     47	*008  01*(CC)				     sgn_clr		     db	color_0
-     48	*009			     Sign_t  ends
-     49				     ;=========================================================================
-     50	*100			     Frame_t struc
-     51	*000  01*(02BC)				     frame_pos		     dw	pos_0
-     52	*002  01*(000A)				     wdth		     dw	wdth_0
-     53	*004  01*(0005)				     hght		     dw	hght_0
-     54	*006  01*(03)				     sym			     db	symbol_0 ;style	data
-     55	*007  01*(CC)				     frm_clr		     db	color_0
-     56	*008			     Frame_t ends
-     57				     ;=========================================================================
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 2
+     10									     endm
+     11				     ;=========================================================================
+     12				     GET_SYM			     macro pos
+     13									     mov dx, [di + pos]
+     14									     endm
+     15				     ;=========================================================================
+     16				     PUSH_ARG			     macro arg
+     17									     mov ax, arg
+     18									     push ax
+     19									     endm
+     20				     ;=========================================================================
+     21				     GET_ARGS			     macro A, B, C, D
+     22									     PUSH_ARG A
+     23									     PUSH_ARG B
+     24									     PUSH_ARG C
+     25									     PUSH_ARG D
+     26									     endm
+     27				     ;=========================================================================
+     28				     CALL_CDECL			     macro proc_name, A, B, C, D
+     29									     GET_ARGS D, C, B, A
+     30									     call proc_name
+     31									     add  sp, 8
+     32								     endm
+     33				     ;=========================================================================
+     34				     END_PROG			     macro
+     35									     mov ax, 4c00h
+     36									     int 21h
+     37									     endm
+     38				     ;=========================================================================
+     39	      =02BC		     pos_0 equ 700
+     40	      =00CC		     color_0 = 4ch or 80h
+     41	      =0003		     symbol_0 =	03h
+     42	      =000A		     wdth_0 = 10
+     43	      =0005		     hght_0 = 5
+     44				     ;=========================================================================
+     45	*100			     Sign_t  struc
+     46	*000  01*(02BC)				     sgn_pos		     dw	pos_0
+     47	*002  01*(0000)				     sgn_addr		     dw	0
+     48	*004  01*(0000)				     len			     dw	0
+     49	*006  01*(0001)				     nlines		     dw	1
+     50	*008  01*(CC)				     sgn_clr		     db	color_0
+     51	*009			     Sign_t  ends
+     52				     ;=========================================================================
+     53	*100			     Frame_t struc
+     54	*000  01*(02BC)				     frame_pos		     dw	pos_0
+     55	*002  01*(000A)				     wdth		     dw	wdth_0
+     56	*004  01*(0005)				     hght		     dw	hght_0
+     57	*006  01*(03)				     sym			     db	symbol_0 ;style	data
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 2
 frame.asm
 
 
 
-     58	0100			     DATASEG
-     59	0000  02BC 000A	0005 03	CC   Frame Frame_t <, ,	, ,>
-     60	0008  02BC 0000	0000 0001 +  Sign Sign_t <, , ,	,>
-     61	      CC
-     62	0011  09*(0000)		     Style_Data	dw 9 dup(0)
-     63				     ; 0  1  2
-     64				     ; 3  4  5
-     65				     ; 6  7  8	- 9 pos	symbols	def frame style
-     66				     ;=========================================================================
-     67	0023			     CODESEG
-     68	0100			     Start:
-     69				     ;================================Main=====================================
-     70	0100			     Main		     proc
-     71
-     72	0100  BE 0080						     mov si, 80h
-     73	0103  8A 0C						     mov cl, [si] ;cmd_strlen
+     58	*007  01*(CC)				     frm_clr		     db	color_0
+     59	*008			     Frame_t ends
+     60				     ;=========================================================================
+     61	0100			     DATASEG
+     62	0000  02BC 000A	0005 03	CC   Frame Frame_t <, ,	, ,>
+     63	0008  02BC 0000	0000 0001 +  Sign Sign_t <, , ,	,>
+     64	      CC
+     65	0011  09*(4C03)		     Style_Data	dw 9 dup(4c03h)
+     66				     ; 0  1  2
+     67				     ; 3  4  5
+     68				     ; 6  7  8	- 9 pos	symbols	def frame style
+     69				     ;=========================================================================
+     70	0023			     CODESEG
+     71	0100			     Start:
+     72				     ;================================Main=====================================
+     73	0100			     Main		     proc
      74
-     75	0105  84 C9						     test cl, cl ;no params
-     76	0107  74 58						     jz	@@skip_par
+     75	0100  BE 0080						     mov si, 80h
+     76	0103  8A 0C						     mov cl, [si] ;cmd_strlen
      77
-     78	0109  FE C9						     dec cl
-     79
-     80	010B  33 C0						     xor ax, ax
-     81	010D  BE 0081						     mov si, 81h
-     82	0110  46						     inc si
-     83
-     84	0111  E8 00C0						     call Get_Frm_Pos ;bx = pos
-     85	0114  89 1E 0000r					     mov word ptr [Frame.frame_pos], bx
+     78	0105  84 C9						     test cl, cl ;no params
+     79	0107  74 58						     jz	@@skip_par
+     80
+     81	0109  FE C9						     dec cl
+     82
+     83	010B  33 C0						     xor ax, ax
+     84	010D  BE 0081						     mov si, 81h
+     85	0110  46						     inc si
      86
-     87	0118  E8 0142						     call Get_Wdth ;dx = wdth
-     88	011B  89 16 0002r					     mov word ptr [Frame.wdth],	dx
+     87	0111  E8 00BB						     call Get_Frm_Pos ;bx = pos
+     88	0114  89 1E 0000r					     mov word ptr [Frame.frame_pos], bx
      89
-     90	011F  E8 0154						     call Get_Hght ;dx = hght
-     91	0122  89 16 0004r					     mov word ptr [Frame.hght],	dx
+     90	0118  E8 013B						     call Get_Wdth ;dx = wdth
+     91	011B  89 16 0002r					     mov word ptr [Frame.wdth],	dx
      92
-     93	0126  E8 0166						     call Get_Frm_Style	;dx
-     94	0129  88 36 0007r					     mov byte ptr [Frame.frm_clr], dh
-     95	012D  88 16 0006r					     mov byte ptr [Frame.sym], dl
-     96
-     97	0131  E8 0239						     call Skip_Spaces
-     98
-     99	0134  8C D8						     mov ax, ds
-    100	0136  8E C0						     mov es, ax
-    101	0138  8B FE						     mov di, si
-    102	013A  E8 0072						     call Strlen
-    103	013D  A3 000Cr						     mov word ptr [Sign.len], ax
-    104
-    105	0140  85 C0						     test ax, ax
-    106	0142  74 1D						     jz	@@skip_par ;no sign
-    107	0144  89 36 000Ar					     mov word ptr [Sign.sgn_addr], si
-    108
-    109	0148  8B 16 0002r					     mov dx, [Frame.wdth]
-    110	014C  8B 3E 0004r					     mov di, [Frame.hght]
-    111	0150  8B 0E 000Cr					     mov cx, [Sign.len]
-    112	0154  E8 00BD						     call Get_Sign_Pos ;bx
-    113	0157  8B 3E 0000r					     mov di, [Frame.frame_pos]
-    114	015B  8D 19						     lea bx, [bx + di]
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 3
+     93	011F  E8 014D						     call Get_Hght ;dx = hght
+     94	0122  89 16 0004r					     mov word ptr [Frame.hght],	dx
+     95
+     96	0126  E8 015F						     call Get_Frm_Style	;dx
+     97	0129  88 36 0007r					     mov byte ptr [Frame.frm_clr], dh
+     98	012D  88 16 0006r					     mov byte ptr [Frame.sym], dl
+     99
+    100	0131  E8 0247						     call Skip_Spaces
+    101
+    102	0134  8C D8						     mov ax, ds
+    103	0136  8E C0						     mov es, ax
+    104	0138  8B FE						     mov di, si
+    105	013A  E8 006D						     call Strlen
+    106	013D  A3 000Cr						     mov word ptr [Sign.len], ax
+    107
+    108	0140  85 C0						     test ax, ax
+    109	0142  74 1D						     jz	@@skip_par ;no sign
+    110	0144  89 36 000Ar					     mov word ptr [Sign.sgn_addr], si
+    111
+    112	0148  8B 16 0002r					     mov dx, [Frame.wdth]
+    113	014C  8B 3E 0004r					     mov di, [Frame.hght]
+    114	0150  8B 0E 000Cr					     mov cx, [Sign.len]
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 3
 frame.asm
 
 
 
-    115	015D  89 1E 0008r					     mov word ptr [Sign.sgn_pos], bx
-    116
-    117	0161  B8 B800		     @@skip_par:	     mov ax, 0b800h
-    118	0164  8E C0						     mov es, ax	;vmem segment
-    119	0166  8A 36 0007r					     mov dh, [Frame.frm_clr]
-    120	016A  8A 16 0006r					     mov dl, [Frame.sym]
-    121
-    122								     CALL_CDECL	Draw_Frame, [Frame.frame_pos], [Frame.wdth],	    +
-    123				     [Frame.hght], dx
-1   124									     GET_ARGS dx, [Frame.hght],	[Frame.wdth],		    +
-    125				     [Frame.frame_pos]
-2   126									     PUSH_ARG dx
-3   127	016E  8B C2							     mov ax, dx
-3   128	0170  50							     push ax
-2   129									     PUSH_ARG [Frame.hght]
-3   130	0171  A1 0004r							     mov ax, [Frame.hght]
-3   131	0174  50							     push ax
-2   132									     PUSH_ARG [Frame.wdth]
-3   133	0175  A1 0002r							     mov ax, [Frame.wdth]
-3   134	0178  50							     push ax
-2   135									     PUSH_ARG [Frame.frame_pos]
-3   136	0179  A1 0000r							     mov ax, [Frame.frame_pos]
-3   137	017C  50							     push ax
-1   138	017D  E8 01F6							     call Draw_Frame
-1   139	0180  83 C4 08							     add  sp, 8
-    140
-    141	0183  8B 0E 000Cr					     mov cx, [Sign.len]
-    142	0187  85 C9						     test cx, cx
-    143	0189  74 0F						     jz	@@no_sign
-    144	018B  8B 36 000Ar					     mov si, [Sign.sgn_addr]
-    145	018F  8B 3E 0008r					     mov di, [Sign.sgn_pos]
-    146	0193  8A 36 0010r					     mov dh, [Sign.sgn_clr]
-    147	0197  E8 0005						     call Print_Str
-    148
-    149	019A			     @@no_sign:		     END_PROG
-1   150	019A  B8 4C00							     mov ax, 4c00h
-1   151	019D  CD 21							     int 21h
-    152	019F							     endp
-    153				     ;=========================================================================
-    154
-    155				     ;================================Print_Str================================
-    156	019F			     Print_Str	     proc
-    157	019F  55						     push bp
+    115	0154  E8 00B8						     call Get_Sign_Pos ;bx
+    116	0157  8B 3E 0000r					     mov di, [Frame.frame_pos]
+    117	015B  8D 19						     lea bx, [bx + di]
+    118	015D  89 1E 0008r					     mov word ptr [Sign.sgn_pos], bx
+    119
+    120	0161  B8 B800		     @@skip_par:	     mov ax, 0b800h
+    121	0164  8E C0						     mov es, ax	;vmem segment
+    122								     ; mov dh, [Frame.frm_clr]
+    123								     ; mov dl, [Frame.sym]
+    124	0166  BA 0011r						     mov dx, offset Style_Data
+    125
+    126								     CALL_CDECL	Draw_Frame, [Frame.frame_pos], [Frame.wdth],	    +
+    127				     [Frame.hght], dx
+1   128									     GET_ARGS dx, [Frame.hght],	[Frame.wdth],		    +
+    129				     [Frame.frame_pos]
+2   130									     PUSH_ARG dx
+3   131	0169  8B C2							     mov ax, dx
+3   132	016B  50							     push ax
+2   133									     PUSH_ARG [Frame.hght]
+3   134	016C  A1 0004r							     mov ax, [Frame.hght]
+3   135	016F  50							     push ax
+2   136									     PUSH_ARG [Frame.wdth]
+3   137	0170  A1 0002r							     mov ax, [Frame.wdth]
+3   138	0173  50							     push ax
+2   139									     PUSH_ARG [Frame.frame_pos]
+3   140	0174  A1 0000r							     mov ax, [Frame.frame_pos]
+3   141	0177  50							     push ax
+1   142	0178  E8 0209							     call Draw_Frame
+1   143	017B  83 C4 08							     add  sp, 8
+    144
+    145	017E  8B 0E 000Cr					     mov cx, [Sign.len]
+    146	0182  85 C9						     test cx, cx
+    147	0184  74 0F						     jz	@@no_sign
+    148	0186  8B 36 000Ar					     mov si, [Sign.sgn_addr]
+    149	018A  8B 3E 0008r					     mov di, [Sign.sgn_pos]
+    150	018E  8A 36 0010r					     mov dh, [Sign.sgn_clr]
+    151	0192  E8 0005						     call Print_Str
+    152
+    153	0195			     @@no_sign:		     END_PROG
+1   154	0195  B8 4C00							     mov ax, 4c00h
+1   155	0198  CD 21							     int 21h
+    156	019A							     endp
+    157				     ;=========================================================================
     158
-    159	01A0  E8 01CA						     call Skip_Spaces
-    160	01A3  8A E6						     mov ah, dh
-    161
-    162	01A5  AC		     @@lp:		     lodsb
-    163	01A6  3C 25						     cmp byte ptr al, '%'
-    164	01A8  74 03						     je	@@exit
-    165	01AA  AB						     stosw
-    166	01AB  E2 F8						     loop @@lp
-    167
-    168	01AD  5D		     @@exit:		     pop bp
-    169	01AE  C3						     ret
-    170	01AF							     endp
-    171				     ;================================Print_Str================================
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 4
+    159				     ;================================Print_Str================================
+    160	019A			     Print_Str	     proc
+    161	019A  55						     push bp
+    162
+    163	019B  E8 01DD						     call Skip_Spaces
+    164	019E  8A E6						     mov ah, dh
+    165
+    166	01A0  AC		     @@lp:		     lodsb
+    167	01A1  3C 25						     cmp byte ptr al, '%'
+    168	01A3  74 03						     je	@@exit
+    169	01A5  AB						     stosw
+    170	01A6  E2 F8						     loop @@lp
+    171
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 4
 frame.asm
 
 
 
-    172				     ;Entry:	     DS:SI - read addr
-    173				     ;			     ES:DI - write addr
-    174				     ;			     CX	- len
-    175				     ;			     DH	= color
-    176				     ;Exit:	     -
-    177				     ;Expected:	     DS	= def
-    178				     ;			     ES	= 0b800h
-    179				     ;Destroyed: AX
-    180				     ;Comment: % is needed when	need pos
-    181				     ;ToDo:
-    182				     ;=========================================================================
-    183
-    184				     ;================================StrLen===================================
-    185	01AF			     Strlen		     proc
-    186	01AF  32 E4						     xor ah, ah
-    187	01B1  B0 0D						     mov al, 0dh
-    188
-    189	01B3  FC						     cld
-    190	01B4  33 C9						     xor cx, cx
-    191	01B6  49						     dec cx
-    192	01B7  F2> AE						     repne scasb
-    193	01B9  4F						     dec di
-    194
-    195	01BA  91						     xchg ax, cx
-    196	01BB  F7 D0						     not ax
-    197	01BD  48						     dec ax
+    172	01A8  5D		     @@exit:		     pop bp
+    173	01A9  C3						     ret
+    174	01AA							     endp
+    175				     ;================================Print_Str================================
+    176				     ;Entry:	     DS:SI - read addr
+    177				     ;			     ES:DI - write addr
+    178				     ;			     CX	- len
+    179				     ;			     DH	= color
+    180				     ;Exit:	     -
+    181				     ;Expected:	     DS	= def
+    182				     ;			     ES	= 0b800h
+    183				     ;Destroyed: AX
+    184				     ;Comment: % is needed when	need pos
+    185				     ;ToDo:
+    186				     ;=========================================================================
+    187
+    188				     ;================================StrLen===================================
+    189	01AA			     Strlen		     proc
+    190	01AA  32 E4						     xor ah, ah
+    191	01AC  B0 0D						     mov al, 0dh
+    192
+    193	01AE  FC						     cld
+    194	01AF  33 C9						     xor cx, cx
+    195	01B1  49						     dec cx
+    196	01B2  F2> AE						     repne scasb
+    197	01B4  4F						     dec di
     198
-    199	01BE  C3						     ret
-    200	01BF							     endp
-    201				     ;================================StrLen===================================
-    202				     ;Entry:	     ES:DI - read_adr
-    203				     ;Exit:	     AX	- len
-    204				     ;Expected:	% is the end of	str, or	err
-    205				     ;Destroyed: CX, ES:DI
-    206				     ;Comment: return len of str from cur pos to 0dh
-    207				     ;ToDo:
-    208				     ;=========================================================================
-    209
-    210				     ;================================StrChr===================================
-    211	01BF			     Strchr		     proc
-    212	01BF  8A D1						     mov dl, cl
+    199	01B5  91						     xchg ax, cx
+    200	01B6  F7 D0						     not ax
+    201	01B8  48						     dec ax
+    202
+    203	01B9  C3						     ret
+    204	01BA							     endp
+    205				     ;================================StrLen===================================
+    206				     ;Entry:	     ES:DI - read_adr
+    207				     ;Exit:	     AX	- len
+    208				     ;Expected:	% is the end of	str, or	err
+    209				     ;Destroyed: CX, ES:DI
+    210				     ;Comment: return len of str from cur pos to 0dh
+    211				     ;ToDo:
+    212				     ;=========================================================================
     213
-    214	01C1  E8 FFEB						     call Strlen ;ax - len
-    215	01C4  8B C8						     mov cx, ax	;max len
-    216	01C6  8A C2						     mov al, dl	;trgt sym
+    214				     ;================================StrChr===================================
+    215	01BA			     Strchr		     proc
+    216	01BA  8A D1						     mov dl, cl
     217
-    218	01C8  FC						     cld
-    219	01C9  F2> AE						     repne scasb
-    220	01CB  4F						     dec di
-    221	01CC  26: 3A 05						     cmp byte ptr al, es:[di]
-    222	01CF  74 02						     je	@@exit ;search is ok
-    223
-    224	01D1  33 FF						     xor di, di
-    225
-    226	01D3  C3		     @@exit:		     ret
-    227	01D4							     endp
-    228				     ;================================StrChr===================================
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 5
+    218	01BC  E8 FFEB						     call Strlen ;ax - len
+    219	01BF  8B C8						     mov cx, ax	;max len
+    220	01C1  8A C2						     mov al, dl	;trgt sym
+    221
+    222	01C3  FC						     cld
+    223	01C4  F2> AE						     repne scasb
+    224	01C6  4F						     dec di
+    225	01C7  26: 3A 05						     cmp byte ptr al, es:[di]
+    226	01CA  74 02						     je	@@exit ;search is ok
+    227
+    228	01CC  33 FF						     xor di, di
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 5
 frame.asm
 
 
 
-    229				     ;Entry:	     ES:DI - read_adr
-    230				     ;			     CL	- target symbol	!= 0
-    231				     ;Exit:	     ES:DI - found pos
-    232				     ;Expected:
-    233				     ;Destroyed: AX, CX, DX
-    234				     ;Comment: ret DI -	pos of found sym
-    235				     ;ret 0 (in	DI) when end of	cmd string (0dh) reached FAIL
-    236				     ;ToDo:
-    237				     ;=========================================================================
-    238
-    239				     ;===============================Get_Frm_Pos===============================
-    240	01D4			     Get_Frm_Pos	     proc
-    241
-    242	01D4  E8 0196						     call Skip_Spaces
-    243
-    244	01D7  AC						     lodsb
-    245	01D8  3C 78						     cmp al, 'x'
-    246	01DA  75 33						     jne @@def_pos
+    229
+    230	01CE  C3		     @@exit:		     ret
+    231	01CF							     endp
+    232				     ;================================StrChr===================================
+    233				     ;Entry:	     ES:DI - read_adr
+    234				     ;			     CL	- target symbol	!= 0
+    235				     ;Exit:	     ES:DI - found pos
+    236				     ;Expected:
+    237				     ;Destroyed: AX, CX, DX
+    238				     ;Comment: ret DI -	pos of found sym
+    239				     ;ret 0 (in	DI) when end of	cmd string (0dh) reached FAIL
+    240				     ;ToDo:
+    241				     ;=========================================================================
+    242
+    243				     ;===============================Get_Frm_Pos===============================
+    244	01CF			     Get_Frm_Pos	     proc
+    245
+    246	01CF  E8 01A9						     call Skip_Spaces
     247
-    248	01DC  E8 0213						     call Atoi ;BX = X
-    249	01DF  D1 E3						     shl bx, 1
-    250	01E1  53						     push bx ;save x
+    248	01D2  AC						     lodsb
+    249	01D3  3C 78						     cmp al, 'x'
+    250	01D5  75 33						     jne @@def_pos
     251
-    252	01E2  E8 0188						     call Skip_Spaces
-    253
-    254	01E5  AC						     lodsb
-    255	01E6  3C 79						     cmp al, 'y'
-    256	01E8  75 25						     jne @@def_pos
+    252	01D7  E8 02A7						     call Atoi ;BX = X
+    253	01DA  D1 E3						     shl bx, 1
+    254	01DC  53						     push bx ;save x
+    255
+    256	01DD  E8 019B						     call Skip_Spaces
     257
-    258	01EA  E8 0205						     call Atoi ; BX = Y
-    259
-    260	01ED  8B D3						     mov dx, bx
-    261	01EF  D1 E2 D1 E2 D1 E2	D1+				     shl dx, 5 ; DX = 32*BX
-    262	      E2 D1 E2
-    263	01F9  D1 E3 D1 E3 D1 E3	D1+				     shl bx, 7 ;BX *= 128
-    264	      E3 D1 E3 D1 E3 D1	E3
-    265	0207  03 DA						     add bx, dx	; 160*Y
-    266
-    267	0209  5A						     pop dx
-    268	020A  03 DA						     add bx, dx	; pos =	160 * y	+ x
-    269	020C  EB 05 90						     jmp @@exit
+    258	01E0  AC						     lodsb
+    259	01E1  3C 79						     cmp al, 'y'
+    260	01E3  75 25						     jne @@def_pos
+    261
+    262	01E5  E8 0299						     call Atoi ; BX = Y
+    263
+    264	01E8  8B D3						     mov dx, bx
+    265	01EA  D1 E2 D1 E2 D1 E2	D1+				     shl dx, 5 ; DX = 32*BX
+    266	      E2 D1 E2
+    267	01F4  D1 E3 D1 E3 D1 E3	D1+				     shl bx, 7 ;BX *= 128
+    268	      E3 D1 E3 D1 E3 D1	E3
+    269	0202  03 DA						     add bx, dx	; 160*Y
     270
-    271	020F  4E		     @@def_pos:		     dec si
-    272	0210  BB 02BC						     mov bx, pos_0
-    273
-    274	0213  C3		     @@exit:		     ret
-    275	0214							     endp
-    276				     ;===============================Get_Frm_Pos===============================
-    277				     ;Entry:	     DS:SI - read addr
-    278				     ;			     CX	- len_str
-    279				     ;Exit:	     BX	- vmem_pos
-    280				     ;Expected:	     DS	= default
-    281				     ;Destroyed: DX, AX, BX
-    282				     ;Comment: ret frame position
-    283				     ;ToDo:
-    284				     ;=========================================================================
-    285
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 6
+    271	0204  5A						     pop dx
+    272	0205  03 DA						     add bx, dx	; pos =	160 * y	+ x
+    273	0207  EB 05 90						     jmp @@exit
+    274
+    275	020A  4E		     @@def_pos:		     dec si
+    276	020B  BB 02BC						     mov bx, pos_0
+    277
+    278	020E  C3		     @@exit:		     ret
+    279	020F							     endp
+    280				     ;===============================Get_Frm_Pos===============================
+    281				     ;Entry:	     DS:SI - read addr
+    282				     ;			     CX	- len_str
+    283				     ;Exit:	     BX	- vmem_pos
+    284				     ;Expected:	     DS	= default
+    285				     ;Destroyed: DX, AX, BX
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 6
 frame.asm
 
 
 
-    286				     ;================================Get_Sign_Pos=============================
-    287	0214			     Get_Sign_Pos    proc
-    288	0214  55						     push bp
-    289	0215  8B EC						     mov bp, sp
-    290
-    291	0217  33 C0						     xor ax, ax
-    292	0219  33 DB						     xor bx, bx
-    293
-    294	021B  83 EA 02						     sub dx, 2
-    295	021E  3B CA						     cmp cx, dx
-    296	0220  77 39						     ja	@@exit
-    297	0222  83 C2 02						     add dx, 2
-    298
-    299	0225  8B C7						     mov ax, di
-    300	0227  B3 02						     mov bl, 2
-    301	0229  F6 F3						     div bl
+    286				     ;Comment: ret frame position
+    287				     ;ToDo:
+    288				     ;=========================================================================
+    289
+    290				     ;================================Get_Sign_Pos=============================
+    291	020F			     Get_Sign_Pos    proc
+    292	020F  55						     push bp
+    293	0210  8B EC						     mov bp, sp
+    294
+    295	0212  33 C0						     xor ax, ax
+    296	0214  33 DB						     xor bx, bx
+    297
+    298	0216  83 EA 02						     sub dx, 2
+    299	0219  3B CA						     cmp cx, dx
+    300	021B  77 37						     ja	@@exit
+    301	021D  83 C2 02						     add dx, 2
     302
-    303	022B  32 E4						     xor ah, ah
-    304	022D  FE C0						     inc al
-    305	022F  8B F8						     mov di, ax	;save half h
+    303	0220  8B C7						     mov ax, di
+    304	0222  B3 02						     mov bl, 2
+    305	0224  F6 F3						     div bl
     306
-    307	0231  8B C2						     mov ax, dx
-    308	0233  2B C1						     sub ax, cx
-    309	0235  F6 F3						     div bl
-    310
-    311	0237  32 E4						     xor ah, ah
-    312	0239  8B D8						     mov bx, ax	;save hor offset
-    313	023B  D1 E3						     shl bx, 1 ;2x wdth
-    314
-    315	023D  8B D7						     mov dx, di
-    316	023F  D1 E2 D1 E2 D1 E2	D1+				     shl dx, 7 ;128 di
-    317	      E2 D1 E2 D1 E2 D1	E2
-    318	024D  D1 E7 D1 E7 D1 E7	D1+				     shl di, 5 ;32 di
-    319	      E7 D1 E7
-    320	0257  03 FA						     add di, dx	;160*di
-    321
-    322	0259  8D 19						     lea bx, [bx + di]
-    323
-    324	025B  5D		     @@exit:		     pop bp
-    325	025C  C3						     ret
-    326	025D							     endp
-    327				     ;================================Get_Sign_Pos=============================
-    328				     ;Entry:	     CX	- sign len,
-    329				     ;			     DX	- frame	wdth
-    330				     ;			     DI	- frame	hght
-    331				     ;Exit:	     BX	- rltv sign pos
-    332				     ;Expected:	-
-    333				     ;Destroyed: CX, DX, DI, AX, BX
-    334				     ;Comment: ret relative sign pos or	0, when	can't centring the sign
-    335				     ;ToDo:
-    336				     ;=========================================================================
-    337
-    338				     ;================================Get_Wdth=================================
-    339	025D			     Get_Wdth		     proc
-    340	025D  55						     push bp
-    341	025E  8B EC						     mov bp, sp
-    342
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 7
+    307	0226  32 E4						     xor ah, ah
+    308	0228  8B F8						     mov di, ax	;save half h
+    309
+    310	022A  8B C2						     mov ax, dx
+    311	022C  2B C1						     sub ax, cx
+    312	022E  F6 F3						     div bl
+    313
+    314	0230  32 E4						     xor ah, ah
+    315	0232  8B D8						     mov bx, ax	;save hor offset
+    316	0234  D1 E3						     shl bx, 1 ;2x wdth
+    317
+    318	0236  8B D7						     mov dx, di
+    319	0238  D1 E2 D1 E2 D1 E2	D1+				     shl dx, 7 ;128 di
+    320	      E2 D1 E2 D1 E2 D1	E2
+    321	0246  D1 E7 D1 E7 D1 E7	D1+				     shl di, 5 ;32 di
+    322	      E7 D1 E7
+    323	0250  03 FA						     add di, dx	;160*di
+    324
+    325	0252  8D 19						     lea bx, [bx + di]
+    326
+    327	0254  5D		     @@exit:		     pop bp
+    328	0255  C3						     ret
+    329	0256							     endp
+    330				     ;================================Get_Sign_Pos=============================
+    331				     ;Entry:	     CX	- sign len,
+    332				     ;			     DX	- frame	wdth
+    333				     ;			     DI	- frame	hght
+    334				     ;Exit:	     BX	- rltv sign pos
+    335				     ;Expected:	-
+    336				     ;Destroyed: CX, DX, DI, AX, BX
+    337				     ;Comment: ret relative sign pos or	0, when	can't centring the sign
+    338				     ;ToDo:
+    339				     ;=========================================================================
+    340
+    341				     ;================================Get_Wdth=================================
+    342	0256			     Get_Wdth		     proc
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 7
 frame.asm
 
 
 
-    343	0260  E8 010A						     call Skip_Spaces
-    344
-    345	0263  AC						     lodsb
-    346	0264  3C 77						     cmp al, 'w'
-    347	0266  75 08						     jne @@default
-    348
-    349	0268  E8 0187						     call Atoi
-    350
-    351	026B  8B D3						     mov dx, bx
-    352	026D  EB 05 90						     jmp @@exit
+    343	0256  55						     push bp
+    344	0257  8B EC						     mov bp, sp
+    345
+    346	0259  E8 011F						     call Skip_Spaces
+    347
+    348	025C  AC						     lodsb
+    349	025D  3C 77						     cmp al, 'w'
+    350	025F  75 08						     jne @@default
+    351
+    352	0261  E8 021D						     call Atoi
     353
-    354	0270  4E		     @@default:		     dec si
-    355	0271  BA 000A						     mov dx, wdth_0
+    354	0264  8B D3						     mov dx, bx
+    355	0266  EB 05 90						     jmp @@exit
     356
-    357	0274  5D		     @@exit:		     pop bp
-    358	0275  C3						     ret
-    359	0276							     endp
-    360				     ;================================Get_Wdth=================================
-    361				     ;Entry:	     DS:SI - read addr
-    362				     ;Exit:	     DX	- wdth
-    363				     ;Expected:	     DS	= def
-    364				     ;Destroyed: AX, BX
-    365				     ;Comment: ret frame wdth
-    366				     ;ToDo:
-    367				     ;=========================================================================
-    368
-    369				     ;================================Get_Hght=================================
-    370	0276			     Get_Hght		     proc
-    371	0276  55						     push bp
-    372	0277  8B EC						     mov bp, sp
-    373
-    374	0279  E8 00F1						     call Skip_Spaces
-    375
-    376	027C  AC						     lodsb
-    377	027D  3C 68						     cmp al, 'h'
-    378	027F  75 08						     jne @@default
-    379
-    380	0281  E8 016E						     call Atoi
-    381
-    382	0284  8B D3						     mov dx, bx
-    383	0286  EB 05 90						     jmp @@exit
+    357	0269  4E		     @@default:		     dec si
+    358	026A  BA 000A						     mov dx, wdth_0
+    359
+    360	026D  5D		     @@exit:		     pop bp
+    361	026E  C3						     ret
+    362	026F							     endp
+    363				     ;================================Get_Wdth=================================
+    364				     ;Entry:	     DS:SI - read addr
+    365				     ;Exit:	     DX	- wdth
+    366				     ;Expected:	     DS	= def
+    367				     ;Destroyed: AX, BX
+    368				     ;Comment: ret frame wdth
+    369				     ;ToDo:
+    370				     ;=========================================================================
+    371
+    372				     ;================================Get_Hght=================================
+    373	026F			     Get_Hght		     proc
+    374	026F  55						     push bp
+    375	0270  8B EC						     mov bp, sp
+    376
+    377	0272  E8 0106						     call Skip_Spaces
+    378
+    379	0275  AC						     lodsb
+    380	0276  3C 68						     cmp al, 'h'
+    381	0278  75 08						     jne @@default
+    382
+    383	027A  E8 0204						     call Atoi
     384
-    385	0289  4E		     @@default:		     dec si
-    386	028A  BA 0005						     mov dx, hght_0
+    385	027D  8B D3						     mov dx, bx
+    386	027F  EB 05 90						     jmp @@exit
     387
-    388	028D  5D		     @@exit:		     pop bp
-    389	028E  C3						     ret
-    390	028F							     endp
-    391				     ;================================Get_Hght=================================
-    392				     ;Entry:	     DS:SI - read addr
-    393				     ;Exit:	     DX	- hght
-    394				     ;Expected:	     DS	= def
-    395				     ;Destroyed: AX, BX, DX
-    396				     ;Comment: ret frame hght
-    397				     ;ToDo:
-    398				     ;=========================================================================
-    399
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 8
+    388	0282  4E		     @@default:		     dec si
+    389	0283  BA 0005						     mov dx, hght_0
+    390
+    391	0286  5D		     @@exit:		     pop bp
+    392	0287  C3						     ret
+    393	0288							     endp
+    394				     ;================================Get_Hght=================================
+    395				     ;Entry:	     DS:SI - read addr
+    396				     ;Exit:	     DX	- hght
+    397				     ;Expected:	     DS	= def
+    398				     ;Destroyed: AX, BX, DX
+    399				     ;Comment: ret frame hght
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 8
 frame.asm
 
 
 
-    400				     ;===============================Get_Frm_Style=============================
-    401	028F			     Get_Frm_Style   proc
-    402	028F  55						     push bp
-    403	0290  8B EC					     mov bp, sp
-    404
-    405	0292  E8 00D8						     call Skip_Spaces
-    406
-    407	0295  33 C0						     xor ax, ax
-    408
-    409	0297  AC						     lodsb
-    410	0298  3C 73						     cmp al, 's'
-    411	029A  75 3C						     jne @@default
-    412
-    413	029C  E8 00CE						     call Skip_Spaces
-    414	029F  AC						     lodsb ;err_check
+    400				     ;ToDo:
+    401				     ;=========================================================================
+    402
+    403				     ;===============================Get_Frm_Style=============================
+    404	0288			     Get_Frm_Style   proc
+    405	0288  55						     push bp
+    406	0289  8B EC					     mov bp, sp
+    407
+    408	028B  E8 00ED						     call Skip_Spaces
+    409
+    410	028E  33 C0						     xor ax, ax
+    411
+    412	0290  AC						     lodsb
+    413	0291  3C 73						     cmp al, 's'
+    414	0293  75 3C						     jne @@default
     415
-    416	02A0  3C 30						     cmp al, '0'
-    417	02A2  72 34						     jb	@@default
-    418	02A4  3C 33						     cmp al, '3'
-    419	02A6  77 30						     ja	@@default
-    420
-    421	02A8  24 0F						     and al, 0fh
-    422	02AA  D0 E0						     shl al, 1 ;word_addresses
-    423	02AC  8B D8						     mov bx, ax
-    424
-    425	02AE  8D 9F 02B4r					     lea bx, [bx + @@jump_table]
-    426
+    416	0295  E8 00E3						     call Skip_Spaces
+    417	0298  AC						     lodsb ;err_check
+    418
+    419	0299  3C 30						     cmp al, '0'
+    420	029B  72 34						     jb	@@default
+    421	029D  3C 33						     cmp al, '3'
+    422	029F  77 30						     ja	@@default
+    423
+    424	02A1  24 0F						     and al, 0fh
+    425	02A3  D0 E0						     shl al, 1 ;word_addresses
+    426	02A5  8B D8						     mov bx, ax
     427
-    428	02B2  FF 27						     jmp [bx]
+    428	02A7  8D 9F 02ADr					     lea bx, [bx + @@jump_table]
     429
-    430	02B4							     @@jump_table:
-    431	02B4  02BCr							     dw	@@case_0
-    432	02B6  02C3r							     dw	@@case_1
-    433	02B8  02CAr							     dw	@@case_2
-    434	02BA  02D1r							     dw	@@case_3
-    435
-    436	02BC							     @@case_0:
-    437	02BC  B2 B0							     mov dl, 0b0h
-    438	02BE  B6 83							     mov dh, 83h
-    439	02C0  EB 1E 90							     jmp @@exit
-    440
-    441	02C3							     @@case_1:
-    442	02C3  B2 03							     mov dl, 03h
-    443	02C5  B6 95							     mov dh, 95h
-    444	02C7  EB 17 90							     jmp @@exit
-    445
-    446	02CA							     @@case_2:
-    447	02CA  B2 0F							     mov dl, 0fh
-    448	02CC  B6 AC							     mov dh, 0ach
-    449	02CE  EB 10 90							     jmp @@exit
-    450
-    451	02D1							     @@case_3:
-    452	02D1  B2 06							     mov dl, 06h
-    453	02D3  B6 CE							     mov dh, 0ceh
-    454	02D5  EB 09 90							     jmp @@exit
-    455
-    456	02D8							     @@default:
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 9
+    430
+    431	02AB  FF 27						     jmp [bx]
+    432
+    433	02AD							     @@jump_table:
+    434	02AD  02B5r							     dw	@@case_0
+    435	02AF  02BCr							     dw	@@case_1
+    436	02B1  02C3r							     dw	@@case_2
+    437	02B3  02CAr							     dw	@@case_3
+    438
+    439	02B5							     @@case_0:
+    440	02B5  B2 B0							     mov dl, 0b0h
+    441	02B7  B6 83							     mov dh, 83h
+    442	02B9  EB 1E 90							     jmp @@exit
+    443
+    444	02BC							     @@case_1:
+    445	02BC  B2 03							     mov dl, 03h
+    446	02BE  B6 95							     mov dh, 95h
+    447	02C0  EB 17 90							     jmp @@exit
+    448
+    449	02C3							     @@case_2:
+    450	02C3  B2 0F							     mov dl, 0fh
+    451	02C5  B6 AC							     mov dh, 0ach
+    452	02C7  EB 10 90							     jmp @@exit
+    453
+    454	02CA							     @@case_3:
+    455	02CA  B2 06							     mov dl, 06h
+    456	02CC  B6 CE							     mov dh, 0ceh
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 9
 frame.asm
 
 
 
-    457	02D8  4E							     dec si
-    458	02D9  B2 03							     mov dl, symbol_0
-    459	02DB  B6 CC							     mov dh, color_0
-    460	02DD  EB 01 90							     jmp @@exit
-    461
-    462	02E0  5D		     @@exit:		     pop bp
-    463	02E1  C3						     ret
-    464	02E2							     endp
-    465				     ;===============================Get_Frm_Style============================
-    466				     ;Entry:	     DS:SI - read addr
-    467				     ;Exit:	     DX	- frm atribute
-    468				     ;			     DH	- color, DL - sym
-    469				     ;Expected:	     DS	= default
-    470				     ;Destroyed: AX, BX
-    471				     ;Comment: define visualisatin of frame
-    472				     ;ToDo:
-    473				     ;=========================================================================
-    474
-    475				     ;===============================Get_Style=================================
-    476	02E2			     Get_Style		     proc
-    477	02E2  55						     push bp
-    478	02E3  8B EC					     mov bp, sp
-    479
-    480	02E5  E8 0085						     call Skip_Spaces
-    481
-    482	02E8  33 C0						     xor ax, ax
-    483	02EA  8B FB						     mov di, bx
+    457	02CE  EB 09 90							     jmp @@exit
+    458
+    459	02D1							     @@default:
+    460	02D1  4E							     dec si
+    461	02D2  B2 03							     mov dl, symbol_0
+    462	02D4  B6 CC							     mov dh, color_0
+    463	02D6  EB 01 90							     jmp @@exit
+    464
+    465	02D9  5D		     @@exit:		     pop bp
+    466	02DA  C3						     ret
+    467	02DB							     endp
+    468				     ;===============================Get_Frm_Style============================
+    469				     ;Entry:	     DS:SI - read addr
+    470				     ;Exit:	     DX	- frm atribute
+    471				     ;			     DH	- color, DL - sym
+    472				     ;Expected:	     DS	= default
+    473				     ;Destroyed: AX, BX
+    474				     ;Comment: define visualisatin of frame
+    475				     ;ToDo:
+    476				     ;=========================================================================
+    477
+    478				     ;===============================Get_Style=================================
+    479	02DB			     Get_Style		     proc
+    480	02DB  55						     push bp
+    481	02DC  8B EC					     mov bp, sp
+    482
+    483	02DE  E8 009A						     call Skip_Spaces
     484
-    485	02EC  AC						     lodsb
-    486	02ED  3C 5B						     cmp al, '['
-    487	02EF  75 79						     jne @@no_style
-    488
-    489	02F1  E8 0079		     @@lp:		     call Skip_Spaces
-    490	02F4  AC						     lodsb
-    491
-    492	02F5  3C 30						     cmp al, '0'
-    493	02F7  72 6A						     jb	@@default
-    494	02F9  3C 39						     cmp al, '9'
-    495	02FB  77 66						     ja	@@default
+    485	02E1  33 C0						     xor ax, ax
+    486	02E3  8B FB						     mov di, bx
+    487	02E5  B2 03						     mov dl, symbol_0
+    488	02E7  B6 CC						     mov dh, color_0
+    489
+    490	02E9  AC						     lodsb
+    491	02EA  3C 5B						     cmp al, '['
+    492	02EC  75 03						     jne @@far_jmp
+    493	02EE  EB 06 90						     jmp @@lp
+    494
+    495	02F1  E9 0084 90 90	     @@far_jmp:		     jmp far ptr @@no_style
     496
-    497	02FD  24 0F						     and al, 0fh ;get num
-    498
-    499	02FF  D0 E0						     shl al, 1 ;word_addresses
-    500	0301  8B D8						     mov bx, ax
-    501
-    502	0303  8D 9F 0313r					     lea bx, [bx + @@jump_table]
-    503	0307  FF 27						     jmp [bx] ;dx - symbol
+    497	02F6  E8 0082		     @@lp:		     call Skip_Spaces
+    498	02F9  AC						     lodsb
+    499
+    500	02FA  3C 30						     cmp al, '0'
+    501	02FC  72 73						     jb	@@default
+    502	02FE  3C 39						     cmp al, '9'
+    503	0300  77 6F						     ja	@@default
     504
-    505	0309  89 15		     @@next:		     mov [di], dx
-    506	030B  8D 7D 02						     lea di, [di + 2]
-    507	030E  E2 E1						     loop @@lp
-    508
-    509	0310  E8 005A						     call Skip_Spaces
-    510
-    511	0313							     @@jump_table:
-    512	0313  0327r							     dw	@@case_0
-    513	0315  032Dr							     dw	@@case_1
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 10
+    505	0302  24 0F						     and al, 0fh ;get num
+    506
+    507	0304  D0 E0						     shl al, 1 ;word_addresses
+    508	0306  8B D8						     mov bx, ax
+    509
+    510	0308  8D 9F 0321r					     lea bx, [bx + @@jump_table]
+    511	030C  FF 27						     jmp [bx] ;dx - symbol
+    512
+    513	030E  89 15		     @@next:		     mov [di], dx
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 10
 frame.asm
 
 
 
-    514	0317  0333r							     dw	@@case_2
-    515	0319  0339r							     dw	@@case_3
-    516	031B  033Fr							     dw	@@case_4
-    517	031D  0345r							     dw	@@case_5
-    518	031F  034Br							     dw	@@case_6
-    519	0321  0351r							     dw	@@case_7
-    520	0323  0357r							     dw	@@case_8
-    521	0325  035Dr							     dw	@@case_9
-    522
-    523	0327							     @@case_0:
-    524	0327  B2 B0							     mov dl, 0b0h
-    525	0329  B6 83							     mov dh, 83h
-    526	032B  EB DC							     jmp @@next
-    527
-    528	032D							     @@case_1:
-    529	032D  B2 03							     mov dl, 03h
-    530	032F  B6 95							     mov dh, 95h
-    531	0331  EB D6							     jmp @@next
-    532
-    533	0333							     @@case_2:
-    534	0333  B2 0F							     mov dl, 0fh
-    535	0335  B6 AC							     mov dh, 0ach
-    536	0337  EB D0							     jmp @@next
-    537
-    538	0339							     @@case_3:
-    539	0339  B2 06							     mov dl, 06h
-    540	033B  B6 CE							     mov dh, 0ceh
-    541	033D  EB CA							     jmp @@next
+    514	0310  8D 7D 02						     lea di, [di + 2]
+    515	0313  E2 E1						     loop @@lp
+    516
+    517	0315  E8 0063						     call Skip_Spaces
+    518	0318  AC						     lodsb
+    519	0319  3C 5D						     cmp al, ']'
+    520	031B  74 5C						     je	@@exit
+    521
+    522	031D  4E						     dec si
+    523	031E  EB 59 90						     jmp @@exit
+    524
+    525	0321							     @@jump_table:
+    526	0321  0335r							     dw	@@case_0
+    527	0323  033Br							     dw	@@case_1
+    528	0325  0341r							     dw	@@case_2
+    529	0327  0347r							     dw	@@case_3
+    530	0329  034Dr							     dw	@@case_4
+    531	032B  0353r							     dw	@@case_5
+    532	032D  0359r							     dw	@@case_6
+    533	032F  035Fr							     dw	@@case_7
+    534	0331  0365r							     dw	@@case_8
+    535	0333  036Br							     dw	@@case_9
+    536
+    537	0335							     @@case_0:
+    538									     DEF_SYM 0b0h, 83h
+1   539	0335  B2 B0							     mov dl, 0b0h
+1   540	0337  B6 83							     mov dh, 83h
+    541	0339  EB D3							     jmp @@next
     542
-    543	033F							     @@case_4:
-    544	033F  B2 06							     mov dl, 06h
-    545	0341  B6 CE							     mov dh, 0ceh
-    546	0343  EB C4							     jmp @@next
-    547
-    548	0345							     @@case_5:
-    549	0345  B2 06							     mov dl, 06h
-    550	0347  B6 CE							     mov dh, 0ceh
-    551	0349  EB BE							     jmp @@next
-    552
-    553	034B							     @@case_6:
-    554	034B  B2 06							     mov dl, 06h
-    555	034D  B6 CE							     mov dh, 0ceh
-    556	034F  EB B8							     jmp @@next
-    557
-    558	0351							     @@case_7:
-    559	0351  B2 06							     mov dl, 06h
-    560	0353  B6 CE							     mov dh, 0ceh
-    561	0355  EB B2							     jmp @@next
-    562
-    563	0357							     @@case_8:
-    564	0357  B2 06							     mov dl, 06h
-    565	0359  B6 CE							     mov dh, 0ceh
-    566	035B  EB AC							     jmp @@next
-    567
-    568	035D							     @@case_9:
-    569	035D  B2 06							     mov dl, 06h
-    570	035F  B6 CE							     mov dh, 0ceh
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 11
+    543	033B							     @@case_1:
+    544									     DEF_SYM 03h, 95h
+1   545	033B  B2 03							     mov dl, 03h
+1   546	033D  B6 95							     mov dh, 95h
+    547	033F  EB CD							     jmp @@next
+    548
+    549	0341							     @@case_2:
+    550									     DEF_SYM 0fh, 0ach
+1   551	0341  B2 0F							     mov dl, 0fh
+1   552	0343  B6 AC							     mov dh, 0ach
+    553	0345  EB C7							     jmp @@next
+    554
+    555	0347							     @@case_3:
+    556									     DEF_SYM 06h, 0ceh
+1   557	0347  B2 06							     mov dl, 06h
+1   558	0349  B6 CE							     mov dh, 0ceh
+    559	034B  EB C1							     jmp @@next
+    560
+    561	034D							     @@case_4:
+    562									     DEF_SYM 06h, 0ceh;c
+1   563	034D  B2 06							     mov dl, 06h
+1   564	034F  B6 CE							     mov dh, 0ceh
+    565	0351  EB BB							     jmp @@next
+    566
+    567	0353							     @@case_5:
+    568									     DEF_SYM 06h, 0ceh;c
+1   569	0353  B2 06							     mov dl, 06h
+1   570	0355  B6 CE							     mov dh, 0ceh
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 11
 frame.asm
 
 
 
-    571	0361  EB A6							     jmp @@next
+    571	0357  EB B5							     jmp @@next
     572
-    573	0363							     @@default:
-    574	0363  4E							     dec si
-    575	0364  B2 03							     mov dl, symbol_0
-    576	0366  B6 CC							     mov dh, color_0
-    577	0368  EB 9F							     jmp @@next	; jmp next
+    573	0359							     @@case_6:
+    574									     DEF_SYM 06h, 0ceh;c
+1   575	0359  B2 06							     mov dl, 06h
+1   576	035B  B6 CE							     mov dh, 0ceh
+    577	035D  EB AF							     jmp @@next
     578
-    579	036A  4E		     @@no_style:	     dec si
-    580	036B  5D		     @@exit:		     pop bp
-    581	036C  C3						     ret
-    582	036D							     endp
-    583				     ;===============================Get_Style=================================
-    584				     ;Entry:	     DS:SI - read addr
-    585				     ;			     BX	- data addr
-    586				     ;			     CX	- data len
-    587				     ;			     DI	- offset
-    588				     ;Exit:	     BX	- addr of edited struct
-    589				     ;Expected:	     DS	= default
-    590				     ;Destroyed: BX, CX, DX, DI, AX
-    591				     ;Comment: [123456789]
-    592				     ;ToDo:
-    593				     ;=========================================================================
-    594
-    595
-    596				     ;===============================Skip_Spaces===============================
-    597	036D			     Skip_Spaces	     proc
-    598
-    599	036D  AC		     @@next_sp:		     lodsb
-    600	036E  3C 20						     cmp al, ' '
-    601	0370  75 02						     jne @@exit
-    602	0372  EB F9						     jmp @@next_sp
-    603
-    604	0374  4E		     @@exit:		     dec si
-    605	0375  C3						     ret
-    606	0376							     endp
-    607				     ;===============================Skip_Spaces===============================
+    579	035F							     @@case_7:
+    580									     DEF_SYM 06h, 0ceh;c
+1   581	035F  B2 06							     mov dl, 06h
+1   582	0361  B6 CE							     mov dh, 0ceh
+    583	0363  EB A9							     jmp @@next
+    584
+    585	0365							     @@case_8:
+    586									     DEF_SYM 06h, 0ceh;c
+1   587	0365  B2 06							     mov dl, 06h
+1   588	0367  B6 CE							     mov dh, 0ceh
+    589	0369  EB A3							     jmp @@next
+    590
+    591	036B							     @@case_9:
+    592									     DEF_SYM 06h, 0ceh;c
+1   593	036B  B2 06							     mov dl, 06h
+1   594	036D  B6 CE							     mov dh, 0ceh
+    595	036F  EB 9D							     jmp @@next
+    596
+    597	0371							     @@default:
+    598	0371  3C 5D							     cmp al, ']'
+    599	0373  75 03							     jne @@no_style
+    600	0375  4E							     dec si
+    601	0376  EB 96							     jmp @@next	; jmp next
+    602
+    603	0378  4E		     @@no_style:	     dec si
+    604	0379  5D		     @@exit:		     pop bp
+    605	037A  C3						     ret
+    606	037B							     endp
+    607				     ;===============================Get_Style=================================
     608				     ;Entry:	     DS:SI - read addr
-    609				     ;Exit:	     SI	+= Nspaces
-    610				     ;Expected:	     DS	= default
-    611				     ;Destroyed: AL
-    612				     ;Comment: skips all spaces	from cur_pos
-    613				     ;ToDo:
-    614				     ;=========================================================================
-    615
-    616				     ;================================Draw_Frame===============================
-    617	0376			     Draw_Frame		     proc
-    618	0376  55						     push bp
-    619	0377  8B EC						     mov bp, sp
+    609				     ;			     BX	- data addr
+    610				     ;			     CX	- data len
+    611				     ;			     DI	- offset
+    612				     ;Exit:	 -
+    613				     ;Expected:	     DS	= default
+    614				     ;Destroyed: BX, CX, DX, DI, AX
+    615				     ;Comment: [123456789] - style format
+    616				     ; not the best realisation, but that's special for	show switch table and far jmps
+    617				     ;ToDo:
+    618				     ;=========================================================================
+    619
     620
-    621	0379  8B 5E 04						     mov bx, [bp + 4]
-    622	037C  8B 4E 06						     mov cx, [bp + 6]
-    623	037F  8B 56 0A						     mov dx, [bp + 10]
-    624
-    625								     GET_ARGS bx, cx, 2, dx
-1   626									     PUSH_ARG bx
-2   627	0382  8B C3							     mov ax, bx
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 12
+    621				     ;===============================Skip_Spaces===============================
+    622	037B			     Skip_Spaces	     proc
+    623
+    624	037B  AC		     @@next_sp:		     lodsb
+    625	037C  3C 20						     cmp al, ' '
+    626	037E  75 02						     jne @@exit
+    627	0380  EB F9						     jmp @@next_sp
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 12
 frame.asm
 
 
 
-2   628	0384  50							     push ax
-1   629									     PUSH_ARG cx
-2   630	0385  8B C1							     mov ax, cx
-2   631	0387  50							     push ax
-1   632									     PUSH_ARG 2
-2   633	0388  B8 0002							     mov ax, 2
-2   634	038B  50							     push ax
-1   635									     PUSH_ARG dx
-2   636	038C  8B C2							     mov ax, dx
-2   637	038E  50							     push ax
-    638	038F  E8 0043						     call Print_Row ;upper line
-    639
-    640	0392  8D 9F 009E					     lea bx, [bx + 158]
-    641	0396  8B 4E 08						     mov cx, [bp + 8]
-    642
-    643								     GET_ARGS bx, cx, 160, dx
-1   644									     PUSH_ARG bx
-2   645	0399  8B C3							     mov ax, bx
-2   646	039B  50							     push ax
-1   647									     PUSH_ARG cx
-2   648	039C  8B C1							     mov ax, cx
-2   649	039E  50							     push ax
-1   650									     PUSH_ARG 160
-2   651	039F  B8 00A0							     mov ax, 160
-2   652	03A2  50							     push ax
-1   653									     PUSH_ARG dx
-2   654	03A3  8B C2							     mov ax, dx
-2   655	03A5  50							     push ax
-    656	03A6  E8 002C						     call Print_Row ;left vert
-    657
-    658	03A9  8B 4E 06						     mov cx, [bp + 6]
-    659
-    660								     GET_ARGS bx, cx, -2, dx
-1   661									     PUSH_ARG bx
-2   662	03AC  8B C3							     mov ax, bx
-2   663	03AE  50							     push ax
-1   664									     PUSH_ARG cx
-2   665	03AF  8B C1							     mov ax, cx
-2   666	03B1  50							     push ax
-1   667									     PUSH_ARG -2
-2   668	03B2  B8 FFFE							     mov ax, -2
-2   669	03B5  50							     push ax
-1   670									     PUSH_ARG dx
-2   671	03B6  8B C2							     mov ax, dx
-2   672	03B8  50							     push ax
-    673	03B9  E8 0019						     call Print_Row ;lower line
-    674
-    675	03BC  8D 9F FF62					     lea bx, [bx - 158]
-    676
-    677	03C0  8B 4E 08						     mov cx, [bp + 8]
-    678
-    679								     GET_ARGS bx, cx, -160, dx
-1   680									     PUSH_ARG bx
-2   681	03C3  8B C3							     mov ax, bx
-2   682	03C5  50							     push ax
-1   683									     PUSH_ARG cx
-2   684	03C6  8B C1							     mov ax, cx
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 13
+    628
+    629	0382  4E		     @@exit:		     dec si
+    630	0383  C3						     ret
+    631	0384							     endp
+    632				     ;===============================Skip_Spaces===============================
+    633				     ;Entry:	     DS:SI - read addr
+    634				     ;Exit:	     SI	+= Nspaces
+    635				     ;Expected:	     DS	= default
+    636				     ;Destroyed: AL
+    637				     ;Comment: skips all spaces	from cur_pos
+    638				     ;ToDo:
+    639				     ;=========================================================================
+    640
+    641				     ;================================Draw_Frame===============================
+    642	0384			     Draw_Frame		     proc
+    643	0384  55						     push bp
+    644	0385  8B EC						     mov bp, sp
+    645
+    646	0387  8B 5E 04						     mov bx, [bp + 4]
+    647
+    648	038A  83 6E 08 02					     sub word ptr [bp +	8], 2
+    649
+    650	038E  83 6E 06 02					     sub word ptr [bp +	6], 2
+    651
+    652	0392  8B 7E 0A						     mov di, [bp + 10]
+    653
+    654								     GET_SYM 0 ;left up
+1   655	0395  8B 15							     mov dx, [di + 0]
+    656								     GET_ARGS bx, 1, 2,	dx
+1   657									     PUSH_ARG bx
+2   658	0397  8B C3							     mov ax, bx
+2   659	0399  50							     push ax
+1   660									     PUSH_ARG 1
+2   661	039A  B8 0001							     mov ax, 1
+2   662	039D  50							     push ax
+1   663									     PUSH_ARG 2
+2   664	039E  B8 0002							     mov ax, 2
+2   665	03A1  50							     push ax
+1   666									     PUSH_ARG dx
+2   667	03A2  8B C2							     mov ax, dx
+2   668	03A4  50							     push ax
+    669	03A5  E8 00BC						     call Print_Row ;dot
+    670
+    671								     GET_SYM 2 ;up mid
+1   672	03A8  8B 55 02							     mov dx, [di + 2]
+    673	03AB  8B 4E 06						     mov cx, [bp + 6]
+    674								     GET_ARGS bx, cx, 2, dx
+1   675									     PUSH_ARG bx
+2   676	03AE  8B C3							     mov ax, bx
+2   677	03B0  50							     push ax
+1   678									     PUSH_ARG cx
+2   679	03B1  8B C1							     mov ax, cx
+2   680	03B3  50							     push ax
+1   681									     PUSH_ARG 2
+2   682	03B4  B8 0002							     mov ax, 2
+2   683	03B7  50							     push ax
+1   684									     PUSH_ARG dx
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 13
 frame.asm
 
 
 
-2   685	03C8  50							     push ax
-1   686									     PUSH_ARG -160
-2   687	03C9  B8 FF60							     mov ax, -160
-2   688	03CC  50							     push ax
-1   689									     PUSH_ARG dx
-2   690	03CD  8B C2							     mov ax, dx
-2   691	03CF  50							     push ax
-    692	03D0  E8 0002						     call Print_Row
-    693
-    694	03D3  5D						     pop bp
-    695	03D4  C3						     ret
-    696	03D5							     endp
-    697				     ;================================Draw_Frame===============================
-    698				     ;Entry:	     BX	= [bp +	4] - vmem offset
-    699				     ;			     CX	= [bp +	(8 | 6)] hght or wdth (уменьшаем на 2)
-    700				     ;			     DX	= [bp +	10] - symbol
-    701				     ;Exit:	     BX	to start pos
-    702				     ;Expected:	     ES	= 0b800h
-    703				     ;Destroyed: BX, CX, DX
-    704				     ;Comment: frame drawing / CDECL std
-    705				     ;ToDo: слева направо +	заливка
-    706				     ;используя структуру стиля
-    707				     ;левый верхний	строка (wdth - 2)
-    708				     ;=========================================================================
+2   685	03B8  8B C2							     mov ax, dx
+2   686	03BA  50							     push ax
+    687	03BB  E8 00A6						     call Print_Row ;hor up
+    688
+    689								     GET_SYM 4 ;right up
+1   690	03BE  8B 55 04							     mov dx, [di + 4]
+    691								     GET_ARGS bx, 1, 2,	dx
+1   692									     PUSH_ARG bx
+2   693	03C1  8B C3							     mov ax, bx
+2   694	03C3  50							     push ax
+1   695									     PUSH_ARG 1
+2   696	03C4  B8 0001							     mov ax, 1
+2   697	03C7  50							     push ax
+1   698									     PUSH_ARG 2
+2   699	03C8  B8 0002							     mov ax, 2
+2   700	03CB  50							     push ax
+1   701									     PUSH_ARG dx
+2   702	03CC  8B C2							     mov ax, dx
+2   703	03CE  50							     push ax
+    704	03CF  E8 0092						     call Print_Row ;dot
+    705
+    706	03D2  8B 5E 04						     mov bx, [bp + 4]
+    707	03D5  8D 9F 00A0					     lea bx, [bx + 160]
+    708	03D9  8B 4E 08						     mov cx, [bp + 8];lp count
     709
-    710				     ;================================Print_Row================================
-    711	03D5			     Print_Row		     proc
-    712	03D5  55						     push bp
-    713	03D6  8B EC						     mov bp, sp
-    714
-    715	03D8  8B 56 04						     mov dx, [bp + 4]
-    716	03DB  8B 76 06						     mov si, [bp + 6]
-    717	03DE  8B 4E 08						     mov cx, [bp + 8]
-    718
-    719	03E1  8B 5E 0A		     @@lp:		     mov bx, [bp + 10]
-    720	03E4  26: 89 17						     mov word ptr es:[bx], dx
-    721	03E7  8D 18						     lea bx, [bx + si]
-    722	03E9  89 5E 0A						     mov word ptr [bp +	10], bx
-    723	03EC  E2 F3						     loop @@lp
-    724
-    725	03EE  5D						     pop bp
-    726	03EF  C2 0008						     ret 8
-    727	03F2							     endp
-    728				     ;================================Print_Row================================
-    729				     ;Entry:	     BX	= [BP +	10] - offset
-    730				     ;			     ES:BX - addr / ES = vmem_segment_addr
-    731				     ;			     CX	= [BP +	8] - count
-    732				     ;			     SI	= [BP +	6] - step
-    733				     ;			     DX	= [BP +	4] - symbol
-    734				     ;Exit:	     BX	= [BP +	10] - new_offset
-    735				     ;Expected:	 -
-    736				     ;Destroyed: CX, DX, SI
-    737				     ;Comment: Printing	line / Pascal std
-    738				     ;ToDo: .
-    739				     ;=========================================================================
-    740
-    741				     ;===============================Atoi======================================
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 14
+    710	03DC  53		     @@lp:		     push bx
+    711	03DD  51						     push cx
+    712								     GET_SYM 6 ;left vert
+1   713	03DE  8B 55 06							     mov dx, [di + 6]
+    714								     GET_ARGS bx, 1, 2,	dx
+1   715									     PUSH_ARG bx
+2   716	03E1  8B C3							     mov ax, bx
+2   717	03E3  50							     push ax
+1   718									     PUSH_ARG 1
+2   719	03E4  B8 0001							     mov ax, 1
+2   720	03E7  50							     push ax
+1   721									     PUSH_ARG 2
+2   722	03E8  B8 0002							     mov ax, 2
+2   723	03EB  50							     push ax
+1   724									     PUSH_ARG dx
+2   725	03EC  8B C2							     mov ax, dx
+2   726	03EE  50							     push ax
+    727	03EF  E8 0072						     call Print_Row ;dot
+    728
+    729								     GET_SYM 8
+1   730	03F2  8B 55 08							     mov dx, [di + 8]
+    731	03F5  8B 4E 06						     mov cx, [bp + 6]
+    732								     GET_ARGS bx, cx, 2, dx
+1   733									     PUSH_ARG bx
+2   734	03F8  8B C3							     mov ax, bx
+2   735	03FA  50							     push ax
+1   736									     PUSH_ARG cx
+2   737	03FB  8B C1							     mov ax, cx
+2   738	03FD  50							     push ax
+1   739									     PUSH_ARG 2
+2   740	03FE  B8 0002							     mov ax, 2
+2   741	0401  50							     push ax
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 14
 frame.asm
 
 
 
-    742	03F2			     Atoi		     proc
-    743	03F2  55						     push bp
-    744
-    745	03F3  E8 FF77						     call Skip_Spaces
+1   742									     PUSH_ARG dx
+2   743	0402  8B C2							     mov ax, dx
+2   744	0404  50							     push ax
+    745	0405  E8 005C						     call Print_Row ;middle
     746
-    747	03F6  33 DB						     xor bx, bx
-    748	03F8  33 C0						     xor ax, ax
-    749
-    750	03FA  AC		     @@next_digit:   lodsb
-    751
-    752	03FB  3C 39						     cmp al, '9'
-    753	03FD  77 16						     ja	@@exit
-    754	03FF  3C 30						     cmp al, '0'
-    755	0401  72 12						     jb	@@exit
-    756
-    757	0403  24 0F						     and al, 0fh
-    758
-    759	0405  8B D3						     mov dx, bx
-    760	0407  D1 E2						     shl dx, 1 ; dx = 2bx
-    761
-    762	0409  D1 E3 D1 E3 D1 E3					     shl bx, 3 ; bx *= 8
-    763	040F  03 DA						     add bx, dx	; 10bx
-    764
-    765	0411  03 D8						     add bx, ax
-    766
-    767	0413  EB E5						     jmp @@next_digit
+    747								     GET_SYM 10
+1   748	0408  8B 55 0A							     mov dx, [di + 10]
+    749								     GET_ARGS bx, 1, 2,	dx
+1   750									     PUSH_ARG bx
+2   751	040B  8B C3							     mov ax, bx
+2   752	040D  50							     push ax
+1   753									     PUSH_ARG 1
+2   754	040E  B8 0001							     mov ax, 1
+2   755	0411  50							     push ax
+1   756									     PUSH_ARG 2
+2   757	0412  B8 0002							     mov ax, 2
+2   758	0415  50							     push ax
+1   759									     PUSH_ARG dx
+2   760	0416  8B C2							     mov ax, dx
+2   761	0418  50							     push ax
+    762	0419  E8 0048						     call Print_Row ;right vert
+    763
+    764	041C  59						     pop cx
+    765	041D  5B						     pop bx
+    766	041E  8D 9F 00A0					     lea bx, [bx + 160];next line
+    767	0422  E2 B8						     loop @@lp
     768
-    769	0415  4E		     @@exit:		     dec si
-    770	0416  5D						     pop bp
-    771	0417  C3						     ret
-    772	0418							     endp
-    773				     ;===============================Atoi======================================
-    774				     ;Entry:	     DS:SI - read addr
-    775				     ;Exit:	     BX	- num, AL = -1
-    776				     ;Expected:	     DS	= default
-    777				     ;Destroyed: DX
-    778				     ;Comment: convert str to num
-    779				     ;ToDo:
-    780				     ;=========================================================================
-    781
-    782				     ;=========================================================================
-    783				     end	     Start
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 15
+    769								     GET_SYM 12	;left dwn
+1   770	0424  8B 55 0C							     mov dx, [di + 12]
+    771								     GET_ARGS bx, 1, 2,	dx
+1   772									     PUSH_ARG bx
+2   773	0427  8B C3							     mov ax, bx
+2   774	0429  50							     push ax
+1   775									     PUSH_ARG 1
+2   776	042A  B8 0001							     mov ax, 1
+2   777	042D  50							     push ax
+1   778									     PUSH_ARG 2
+2   779	042E  B8 0002							     mov ax, 2
+2   780	0431  50							     push ax
+1   781									     PUSH_ARG dx
+2   782	0432  8B C2							     mov ax, dx
+2   783	0434  50							     push ax
+    784	0435  E8 002C						     call Print_Row ;dot
+    785
+    786								     GET_SYM 14	;dwn mid
+1   787	0438  8B 55 0E							     mov dx, [di + 14]
+    788	043B  8B 4E 06						     mov cx, [bp + 6]
+    789								     GET_ARGS bx, cx, 2, dx
+1   790									     PUSH_ARG bx
+2   791	043E  8B C3							     mov ax, bx
+2   792	0440  50							     push ax
+1   793									     PUSH_ARG cx
+2   794	0441  8B C1							     mov ax, cx
+2   795	0443  50							     push ax
+1   796									     PUSH_ARG 2
+2   797	0444  B8 0002							     mov ax, 2
+2   798	0447  50							     push ax
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 15
+frame.asm
+
+
+
+1   799									     PUSH_ARG dx
+2   800	0448  8B C2							     mov ax, dx
+2   801	044A  50							     push ax
+    802	044B  E8 0016						     call Print_Row ;hor dwn
+    803
+    804								     GET_SYM 16	;right dwn
+1   805	044E  8B 55 10							     mov dx, [di + 16]
+    806								     GET_ARGS bx, 1, 2,	dx
+1   807									     PUSH_ARG bx
+2   808	0451  8B C3							     mov ax, bx
+2   809	0453  50							     push ax
+1   810									     PUSH_ARG 1
+2   811	0454  B8 0001							     mov ax, 1
+2   812	0457  50							     push ax
+1   813									     PUSH_ARG 2
+2   814	0458  B8 0002							     mov ax, 2
+2   815	045B  50							     push ax
+1   816									     PUSH_ARG dx
+2   817	045C  8B C2							     mov ax, dx
+2   818	045E  50							     push ax
+    819	045F  E8 0002						     call Print_Row ;dot
+    820
+    821	0462  5D						     pop bp
+    822	0463  C3						     ret
+    823	0464							     endp
+    824				     ;================================Draw_Frame===============================
+    825				     ;Entry:	     [BP+4]  - vmem offset (начальный адрес в видеопамяти)
+    826				     ;		 [BP+6]	 - width (ширина рамки в символах)
+    827				     ;		 [BP+8]	 - height (высота	рамки в символах)
+    828				     ;			     [BP+10] - style data addr (адрес структуры со	    +
+    829				     стилями)
+    830				     ;Exit:	     -
+    831				     ;Expected:	     ES	= 0b800h (сегмент видеопамяти)
+    832				     ;Destroyed: AX, BX, CX, DX, SI
+    833				     ;Comment: Рисует рамку используя структуру стиля	(18 слов)
+    834				     ;	       Стили: 0-left_up, 2-up_mid,	4-right_up,
+    835				     ;		      6-left_vert, 8-mid_vert, 10-right_vert,
+    836				     ;		      12-left_down, 14-down_mid, 16-right_down
+    837				     ;ToDo: слева направо +	заливка
+    838				     ;используя структуру стиля
+    839				     ;левый верхний	строка (wdth - 2)
+    840				     ;=========================================================================
+    841
+    842				     ;================================Print_Row================================
+    843	0464			     Print_Row		     proc
+    844	0464  55						     push bp
+    845	0465  8B EC						     mov bp, sp
+    846
+    847	0467  8B 56 04						     mov dx, [bp + 4]
+    848	046A  8B 76 06						     mov si, [bp + 6]
+    849	046D  8B 4E 08						     mov cx, [bp + 8]
+    850
+    851	0470  8B 5E 0A		     @@lp:		     mov bx, [bp + 10]
+    852	0473  26: 89 17						     mov word ptr es:[bx], dx
+    853	0476  8D 18						     lea bx, [bx + si]
+    854	0478  89 5E 0A						     mov word ptr [bp +	10], bx
+    855	047B  E2 F3						     loop @@lp
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 16
+frame.asm
+
+
+
+    856
+    857	047D  5D						     pop bp
+    858	047E  C2 0008						     ret 8
+    859	0481							     endp
+    860				     ;================================Print_Row================================
+    861				     ;Entry:	     Стек: [BP+10] - vmem offset
+    862				     ;		       [BP+8]  - length	(количество символов)
+    863				     ;		       [BP+6]  - step (шаг между символами в байтах)
+    864				     ;		       [BP+4]  - symbol	(символ+атрибут)
+    865				     ;Exit:		       [BP+10] обновлен	(новый offset после печати)
+    866				     ;Expected:	     ES	= 0b800h
+    867				     ;Destroyed: CX, DX, SI (BX	не портится!)
+    868				     ;Comment: Печатает	строку символов с заданным шагом
+    869				     ;ToDo: .
+    870				     ;=========================================================================
+    871
+    872				     ;===============================Atoi======================================
+    873	0481			     Atoi		     proc
+    874	0481  55						     push bp
+    875
+    876	0482  E8 FEF6						     call Skip_Spaces
+    877
+    878	0485  33 DB						     xor bx, bx
+    879	0487  33 C0						     xor ax, ax
+    880
+    881	0489  AC		     @@next_digit:   lodsb
+    882
+    883	048A  3C 39						     cmp al, '9'
+    884	048C  77 16						     ja	@@exit
+    885	048E  3C 30						     cmp al, '0'
+    886	0490  72 12						     jb	@@exit
+    887
+    888	0492  24 0F						     and al, 0fh
+    889
+    890	0494  8B D3						     mov dx, bx
+    891	0496  D1 E2						     shl dx, 1 ; dx = 2bx
+    892
+    893	0498  D1 E3 D1 E3 D1 E3					     shl bx, 3 ; bx *= 8
+    894	049E  03 DA						     add bx, dx	; 10bx
+    895
+    896	04A0  03 D8						     add bx, ax
+    897
+    898	04A2  EB E5						     jmp @@next_digit
+    899
+    900	04A4  4E		     @@exit:		     dec si
+    901	04A5  5D						     pop bp
+    902	04A6  C3						     ret
+    903	04A7							     endp
+    904				     ;===============================Atoi======================================
+    905				     ;Entry:	     DS:SI - read addr
+    906				     ;Exit:	     BX	- num, AL = -1
+    907				     ;Expected:	     DS	= default
+    908				     ;Destroyed: DX
+    909				     ;Comment: convert str to num
+    910				     ;ToDo:
+    911				     ;=========================================================================
+    912
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 17
+frame.asm
+
+
+
+    913				     ;=========================================================================
+    914				     end	     Start
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 18
 Symbol Table
 
 
@@ -861,48 +1007,50 @@ Symbol Name			  Type	 Value
 
 ??DATE				  Text	 "02/18/26"
 ??FILENAME			  Text	 "frame	  "
-??TIME				  Text	 "21:00:18"
+??TIME				  Text	 "23:01:10"
 ??VERSION			  Number 040A
 @32BIT				  Text	 0
-@@CASE_0			  Near	 DGROUP:02BC
-@@CASE_0			  Near	 DGROUP:0327
-@@CASE_1			  Near	 DGROUP:02C3
-@@CASE_1			  Near	 DGROUP:032D
-@@CASE_2			  Near	 DGROUP:02CA
-@@CASE_2			  Near	 DGROUP:0333
-@@CASE_3			  Near	 DGROUP:02D1
-@@CASE_3			  Near	 DGROUP:0339
-@@CASE_4			  Near	 DGROUP:033F
-@@CASE_5			  Near	 DGROUP:0345
-@@CASE_6			  Near	 DGROUP:034B
-@@CASE_7			  Near	 DGROUP:0351
-@@CASE_8			  Near	 DGROUP:0357
-@@CASE_9			  Near	 DGROUP:035D
-@@DEFAULT			  Near	 DGROUP:0270
-@@DEFAULT			  Near	 DGROUP:0289
-@@DEFAULT			  Near	 DGROUP:02D8
-@@DEFAULT			  Near	 DGROUP:0363
-@@DEF_POS			  Near	 DGROUP:020F
-@@EXIT				  Near	 DGROUP:01AD
-@@EXIT				  Near	 DGROUP:01D3
-@@EXIT				  Near	 DGROUP:0213
-@@EXIT				  Near	 DGROUP:025B
-@@EXIT				  Near	 DGROUP:0274
-@@EXIT				  Near	 DGROUP:028D
-@@EXIT				  Near	 DGROUP:02E0
-@@EXIT				  Near	 DGROUP:036B
-@@EXIT				  Near	 DGROUP:0374
-@@EXIT				  Near	 DGROUP:0415
-@@JUMP_TABLE			  Near	 DGROUP:02B4
-@@JUMP_TABLE			  Near	 DGROUP:0313
-@@LP				  Near	 DGROUP:01A5
-@@LP				  Near	 DGROUP:02F1
-@@LP				  Near	 DGROUP:03E1
-@@NEXT				  Near	 DGROUP:0309
-@@NEXT_DIGIT			  Near	 DGROUP:03FA
-@@NEXT_SP			  Near	 DGROUP:036D
-@@NO_SIGN			  Near	 DGROUP:019A
-@@NO_STYLE			  Near	 DGROUP:036A
+@@CASE_0			  Near	 DGROUP:02B5
+@@CASE_0			  Near	 DGROUP:0335
+@@CASE_1			  Near	 DGROUP:02BC
+@@CASE_1			  Near	 DGROUP:033B
+@@CASE_2			  Near	 DGROUP:02C3
+@@CASE_2			  Near	 DGROUP:0341
+@@CASE_3			  Near	 DGROUP:02CA
+@@CASE_3			  Near	 DGROUP:0347
+@@CASE_4			  Near	 DGROUP:034D
+@@CASE_5			  Near	 DGROUP:0353
+@@CASE_6			  Near	 DGROUP:0359
+@@CASE_7			  Near	 DGROUP:035F
+@@CASE_8			  Near	 DGROUP:0365
+@@CASE_9			  Near	 DGROUP:036B
+@@DEFAULT			  Near	 DGROUP:0269
+@@DEFAULT			  Near	 DGROUP:0282
+@@DEFAULT			  Near	 DGROUP:02D1
+@@DEFAULT			  Near	 DGROUP:0371
+@@DEF_POS			  Near	 DGROUP:020A
+@@EXIT				  Near	 DGROUP:01A8
+@@EXIT				  Near	 DGROUP:01CE
+@@EXIT				  Near	 DGROUP:020E
+@@EXIT				  Near	 DGROUP:0254
+@@EXIT				  Near	 DGROUP:026D
+@@EXIT				  Near	 DGROUP:0286
+@@EXIT				  Near	 DGROUP:02D9
+@@EXIT				  Near	 DGROUP:0379
+@@EXIT				  Near	 DGROUP:0382
+@@EXIT				  Near	 DGROUP:04A4
+@@FAR_JMP			  Near	 DGROUP:02F1
+@@JUMP_TABLE			  Near	 DGROUP:02AD
+@@JUMP_TABLE			  Near	 DGROUP:0321
+@@LP				  Near	 DGROUP:01A0
+@@LP				  Near	 DGROUP:02F6
+@@LP				  Near	 DGROUP:03DC
+@@LP				  Near	 DGROUP:0470
+@@NEXT				  Near	 DGROUP:030E
+@@NEXT_DIGIT			  Near	 DGROUP:0489
+@@NEXT_SP			  Near	 DGROUP:037B
+@@NO_SIGN			  Near	 DGROUP:0195
+@@NO_STYLE			  Near	 DGROUP:0378
 @@SKIP_PAR			  Near	 DGROUP:0161
 @CODE				  Text	 DGROUP
 @CODESIZE			  Text	 0
@@ -911,35 +1059,35 @@ Symbol Name			  Type	 Value
 @DATA				  Text	 DGROUP
 @DATASIZE			  Text	 0
 @FILENAME			  Text	 FRAME
-@INTERFACE			  Text	 000H
-@MODEL				  Text	 1
-Turbo Assembler	 Version 4.1	    02/18/26 21:00:18	    Page 16
+Turbo Assembler	 Version 4.1	    02/18/26 23:01:11	    Page 19
 Symbol Table
 
 
 
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
 @STACK				  Text	 DGROUP
 @WORDSIZE			  Text	 2
-ATOI				  Near	 DGROUP:03F2
+ATOI				  Near	 DGROUP:0481
 COLOR_0				  Number 00CC
-DRAW_FRAME			  Near	 DGROUP:0376
+DRAW_FRAME			  Near	 DGROUP:0384
 FRAME				  Struct DGROUP:0000 FRAME_T
-GET_FRM_POS			  Near	 DGROUP:01D4
-GET_FRM_STYLE			  Near	 DGROUP:028F
-GET_HGHT			  Near	 DGROUP:0276
-GET_SIGN_POS			  Near	 DGROUP:0214
-GET_STYLE			  Near	 DGROUP:02E2
-GET_WDTH			  Near	 DGROUP:025D
+GET_FRM_POS			  Near	 DGROUP:01CF
+GET_FRM_STYLE			  Near	 DGROUP:0288
+GET_HGHT			  Near	 DGROUP:026F
+GET_SIGN_POS			  Near	 DGROUP:020F
+GET_STYLE			  Near	 DGROUP:02DB
+GET_WDTH			  Near	 DGROUP:0256
 HGHT_0				  Number 0005
 MAIN				  Near	 DGROUP:0100
 POS_0				  Number 02BC
-PRINT_ROW			  Near	 DGROUP:03D5
-PRINT_STR			  Near	 DGROUP:019F
+PRINT_ROW			  Near	 DGROUP:0464
+PRINT_STR			  Near	 DGROUP:019A
 SIGN				  Struct DGROUP:0008 SIGN_T
-SKIP_SPACES			  Near	 DGROUP:036D
+SKIP_SPACES			  Near	 DGROUP:037B
 START				  Near	 DGROUP:0100
-STRCHR				  Near	 DGROUP:01BF
-STRLEN				  Near	 DGROUP:01AF
+STRCHR				  Near	 DGROUP:01BA
+STRLEN				  Near	 DGROUP:01AA
 STYLE_DATA			  Word	 DGROUP:0011
 SYMBOL_0			  Number 0003
 WDTH_0				  Number 000A
@@ -950,6 +1098,7 @@ CALL_CDECL
 DEF_SYM
 END_PROG
 GET_ARGS
+GET_SYM
 PUSH_ARG
 
 Structure Name			  Type	Offset
@@ -971,5 +1120,5 @@ Groups & Segments		  Bit Size Align  Combine Class
 
 DGROUP				  Group
   _DATA				  16  0023 Word	  Public  DATA
-  _TEXT				  16  0418 Word	  Public  CODE
+  _TEXT				  16  04A7 Word	  Public  CODE
 
